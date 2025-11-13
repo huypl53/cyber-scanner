@@ -1,0 +1,211 @@
+"""
+Kafka Consumer for real-time network traffic data.
+Consumes messages from Kafka, runs predictions, and broadcasts results via WebSocket.
+"""
+from confluent_kafka import Consumer, KafkaException, KafkaError
+from app.core.config import settings
+from app.core.database import SessionLocal
+from app.services.preprocessor import DataPreprocessor
+from app.services.threat_detector import ThreatDetectorService
+from app.services.attack_classifier import AttackClassifierService
+from app.services.self_healing import SelfHealingService
+from app.services.websocket_manager import get_connection_manager
+from app.models.database import TrafficData
+from datetime import datetime
+import json
+import logging
+import asyncio
+
+logger = logging.getLogger(__name__)
+
+
+class KafkaConsumerService:
+    """Kafka consumer service for processing real-time network traffic data."""
+
+    def __init__(self):
+        self.consumer_config = {
+            'bootstrap.servers': settings.KAFKA_BOOTSTRAP_SERVERS,
+            'group.id': settings.KAFKA_GROUP_ID,
+            'auto.offset.reset': 'latest',
+            'enable.auto.commit': True
+        }
+        self.consumer = None
+        self.preprocessor = DataPreprocessor()
+        self.threat_detector = ThreatDetectorService()
+        self.attack_classifier = AttackClassifierService()
+        self.self_healing = SelfHealingService()
+        self.ws_manager = get_connection_manager()
+        self.running = False
+
+    def start(self):
+        """Start the Kafka consumer."""
+        try:
+            self.consumer = Consumer(self.consumer_config)
+            self.consumer.subscribe([settings.KAFKA_TOPIC_REALTIME_DATA])
+            self.running = True
+            logger.info(
+                f"Kafka consumer started. Subscribed to topic: "
+                f"{settings.KAFKA_TOPIC_REALTIME_DATA}"
+            )
+        except KafkaException as e:
+            logger.error(f"Failed to start Kafka consumer: {e}")
+            raise
+
+    def stop(self):
+        """Stop the Kafka consumer."""
+        self.running = False
+        if self.consumer:
+            self.consumer.close()
+            logger.info("Kafka consumer stopped")
+
+    async def consume_messages(self):
+        """
+        Consume messages from Kafka and process them.
+        This should be run in a separate thread/process.
+        """
+        if not self.consumer:
+            raise RuntimeError("Consumer not started. Call start() first.")
+
+        logger.info("Starting message consumption...")
+
+        try:
+            while self.running:
+                msg = self.consumer.poll(timeout=1.0)
+
+                if msg is None:
+                    continue
+
+                if msg.error():
+                    if msg.error().code() == KafkaError._PARTITION_EOF:
+                        logger.info(f"Reached end of partition: {msg.partition()}")
+                    else:
+                        logger.error(f"Kafka error: {msg.error()}")
+                    continue
+
+                # Process the message
+                await self.process_message(msg)
+
+        except KeyboardInterrupt:
+            logger.info("Consumer interrupted by user")
+        except Exception as e:
+            logger.error(f"Error in consumer loop: {e}")
+        finally:
+            self.stop()
+
+    async def process_message(self, msg):
+        """
+        Process a single Kafka message.
+        Runs prediction pipeline and broadcasts results.
+        """
+        try:
+            # Parse message
+            data = json.loads(msg.value().decode('utf-8'))
+            logger.debug(f"Received message: {data}")
+
+            # Get database session
+            db = SessionLocal()
+
+            try:
+                # Validate and extract features
+                features, model_type = self.preprocessor.validate_and_extract_features(
+                    data,
+                    model_type="auto"
+                )
+
+                # Store traffic data
+                traffic_record = TrafficData(
+                    features=features,
+                    source='realtime'
+                )
+                db.add(traffic_record)
+                db.commit()
+                db.refresh(traffic_record)
+
+                # Run threat detection
+                threat_prediction = self.threat_detector.predict(
+                    features,
+                    db,
+                    traffic_record.id
+                )
+
+                # Build response data
+                prediction_data = {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "traffic_data_id": traffic_record.id,
+                    "threat_prediction": {
+                        "id": threat_prediction.id,
+                        "prediction_score": threat_prediction.prediction_score,
+                        "is_attack": threat_prediction.is_attack,
+                        "threshold": threat_prediction.threshold
+                    },
+                    "attack_prediction": None,
+                    "self_healing_action": None
+                }
+
+                # If attack detected and classification features available, classify
+                if threat_prediction.is_attack and model_type == "attack_classification":
+                    attack_prediction = self.attack_classifier.predict(
+                        features,
+                        db,
+                        traffic_record.id
+                    )
+
+                    # Log self-healing action
+                    self_healing_action = self.self_healing.log_action(
+                        attack_prediction,
+                        db
+                    )
+
+                    # Add to response
+                    prediction_data["attack_prediction"] = {
+                        "id": attack_prediction.id,
+                        "attack_type_encoded": attack_prediction.attack_type_encoded,
+                        "attack_type_name": attack_prediction.attack_type_name,
+                        "confidence": attack_prediction.confidence
+                    }
+
+                    prediction_data["self_healing_action"] = {
+                        "id": self_healing_action.id,
+                        "action_type": self_healing_action.action_type,
+                        "action_description": self_healing_action.action_description,
+                        "action_params": self_healing_action.action_params,
+                        "status": self_healing_action.status
+                    }
+
+                # Broadcast to WebSocket clients
+                await self.ws_manager.broadcast_prediction(prediction_data)
+
+                logger.info(
+                    f"Processed message: Traffic ID {traffic_record.id}, "
+                    f"Attack: {threat_prediction.is_attack}"
+                )
+
+            except Exception as e:
+                logger.error(f"Error processing message: {e}")
+                db.rollback()
+            finally:
+                db.close()
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in message: {e}")
+        except Exception as e:
+            logger.error(f"Error in message processing: {e}")
+
+
+# Global consumer instance
+_consumer_service = None
+
+
+def get_consumer_service() -> KafkaConsumerService:
+    """Get or create the global consumer service instance."""
+    global _consumer_service
+    if _consumer_service is None:
+        _consumer_service = KafkaConsumerService()
+    return _consumer_service
+
+
+async def start_consumer_loop():
+    """Start the Kafka consumer loop. Should be run as a background task."""
+    consumer = get_consumer_service()
+    consumer.start()
+    await consumer.consume_messages()
