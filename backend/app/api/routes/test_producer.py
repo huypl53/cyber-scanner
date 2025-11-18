@@ -4,7 +4,7 @@ Allows triggering test data streams for development and testing.
 """
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from app.kafka.producer import get_producer_service
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 import logging
 
 router = APIRouter()
@@ -12,6 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 class StreamConfig(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+
     count: int = 100
     interval: float = 1.0
     model_type: str = "attack_classification"

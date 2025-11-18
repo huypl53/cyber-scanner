@@ -15,8 +15,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Create database tables
-Base.metadata.create_all(bind=engine)
+# Create database tables (with error handling for when DB is not available)
+try:
+    Base.metadata.create_all(bind=engine)
+    logger.info("Database tables created successfully")
+except Exception as e:
+    logger.warning(f"Could not create database tables: {e}")
+    logger.warning("Database features will not be available. API may have limited functionality.")
 
 # Initialize FastAPI app
 app = FastAPI(

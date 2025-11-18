@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 
@@ -24,6 +24,8 @@ class TrafficDataResponse(TrafficDataBase):
 
 # Threat Prediction Schemas
 class ThreatPredictionResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
+
     id: int
     traffic_data_id: int
     prediction_score: float
@@ -32,12 +34,11 @@ class ThreatPredictionResponse(BaseModel):
     model_version: str
     created_at: datetime
 
-    class Config:
-        from_attributes = True
-
 
 # Attack Prediction Schemas
 class AttackPredictionResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
+
     id: int
     traffic_data_id: int
     attack_type_encoded: int
@@ -45,9 +46,6 @@ class AttackPredictionResponse(BaseModel):
     confidence: Optional[float]
     model_version: str
     created_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 # Self-Healing Action Schemas

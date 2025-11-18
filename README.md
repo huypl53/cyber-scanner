@@ -38,7 +38,7 @@ A comprehensive, real-time network threat detection system with automated self-h
 - Node.js 20+ (for local development)
 - Python 3.11+ (for local development)
 
-### Running with Docker Compose
+### Option 1: Full Stack with Docker (Production-like)
 
 1. Clone the repository:
 ```bash
@@ -47,7 +47,7 @@ cd ui
 
 2. Start all services:
 ```bash
-docker-compose up -d
+docker-compose -f docker-compose.full.yml up -d
 ```
 
 3. Wait for services to be healthy (check with `docker-compose ps`)
@@ -57,22 +57,61 @@ docker-compose up -d
    - Backend API: http://localhost:8000
    - API Docs: http://localhost:8000/docs
 
-### Running Locally (Development)
+### Option 2: Development Mode (Recommended)
 
-#### Backend
+This mode runs infrastructure services (Postgres, Kafka, Zookeeper) in Docker while allowing you to run backend and frontend locally for faster development.
+
+#### Step 1: Start Infrastructure Services
 ```bash
-cd backend
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload
+docker-compose -f docker-compose.dev.yml up -d
 ```
 
-#### Frontend
+This starts:
+- PostgreSQL on port 5432
+- Kafka on ports 9092 (internal) and 29092 (host)
+- Zookeeper on port 2181
+
+#### Step 2: Run Backend Locally
+```bash
+cd backend
+uv venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+uv pip install -r requirements.txt
+
+# Configure environment to connect to Docker services
+export DATABASE_URL="postgresql://user:password@localhost:5432/threat_detection_db"
+export KAFKA_BOOTSTRAP_SERVERS="localhost:29092"
+
+# Run the backend
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+#### Step 3: Run Frontend Locally
 ```bash
 cd frontend
 npm install
+
+# Run the frontend
 npm run dev
+```
+
+#### Step 4: Access the Application
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- API Docs: http://localhost:8000/docs
+
+### Stopping Services
+
+For development mode:
+```bash
+# Stop backend and frontend (Ctrl+C in their terminals)
+# Stop infrastructure services
+docker-compose -f docker-compose.dev.yml down
+```
+
+For full stack:
+```bash
+docker-compose -f docker-compose.full.yml down
 ```
 
 ## Usage Guide
@@ -175,6 +214,25 @@ npm run test:e2e
 
 ## Development
 
+### Docker Compose Files
+
+This project includes three Docker Compose configurations:
+
+1. **`docker-compose.yml`** (Original/Legacy)
+   - Contains all services together
+   - Kept for backward compatibility
+
+2. **`docker-compose.dev.yml`** (Development - Recommended)
+   - Runs only infrastructure services: PostgreSQL, Kafka, Zookeeper
+   - Use when developing backend/frontend locally
+   - Benefits: Hot-reloading, faster iteration, easier debugging
+   - Backend connects to `localhost:5432` (Postgres) and `localhost:29092` (Kafka)
+
+3. **`docker-compose.full.yml`** (Production-like)
+   - Runs complete stack including backend and frontend containers
+   - Use for integration testing or production-like environment
+   - All services communicate via Docker network
+
 ### Backend Structure
 ```
 backend/
@@ -200,24 +258,140 @@ frontend/
 
 ## Environment Variables
 
+### Development Mode (Local Backend/Frontend)
+
+When running backend locally with `docker-compose.dev.yml`, use these environment variables:
+
+```bash
+# Backend (.env or export)
+DATABASE_URL=postgresql://user:password@localhost:5432/threat_detection_db
+POSTGRES_USER=user
+POSTGRES_PASSWORD=password
+POSTGRES_DB=threat_detection_db
+KAFKA_BOOTSTRAP_SERVERS=localhost:29092
+KAFKA_TOPIC_REALTIME_DATA=network-traffic
+KAFKA_TOPIC_PREDICTIONS=predictions
+KAFKA_GROUP_ID=threat-detection-consumer
+API_V1_PREFIX=/api/v1
+PROJECT_NAME="AI Threat Detection System"
+DEBUG=True
+BACKEND_CORS_ORIGINS=["http://localhost:3000"]
+WS_HEARTBEAT_INTERVAL=30
+```
+
+```bash
+# Frontend (.env.local)
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_WS_URL=ws://localhost:8000
+```
+
+### Docker Mode (Full Stack)
+
+When using `docker-compose.full.yml`, environment variables are configured in the compose file. You can override them with a `.env` file:
+
+```bash
+POSTGRES_USER=user
+POSTGRES_PASSWORD=password
+POSTGRES_DB=threat_detection_db
+```
+
 See `.env.example` for all configuration options.
 
 ## Troubleshooting
 
 ### Services not starting
+
+For development mode:
 ```bash
-docker-compose down -v
-docker-compose up -d
+docker-compose -f docker-compose.dev.yml down -v
+docker-compose -f docker-compose.dev.yml up -d
+```
+
+For full stack:
+```bash
+docker-compose -f docker-compose.full.yml down -v
+docker-compose -f docker-compose.full.yml up -d
 ```
 
 ### Database connection issues
+
+Check PostgreSQL logs:
 ```bash
-docker-compose logs postgres
+docker-compose -f docker-compose.dev.yml logs postgres
+# or
+docker-compose -f docker-compose.full.yml logs postgres
+```
+
+Test connection from host:
+```bash
+psql -h localhost -U user -d threat_detection_db
+# Password: password
 ```
 
 ### Kafka not receiving messages
+
+Check Kafka logs:
 ```bash
-docker-compose logs kafka
+docker-compose -f docker-compose.dev.yml logs kafka
+```
+
+List Kafka topics:
+```bash
+docker exec threat-detection-kafka kafka-topics --list --bootstrap-server localhost:9092
+```
+
+Consume messages from topic:
+```bash
+docker exec threat-detection-kafka kafka-console-consumer \
+  --bootstrap-server localhost:9092 \
+  --topic network-traffic \
+  --from-beginning
+```
+
+### Backend not connecting to services
+
+When running backend locally, ensure you're using the correct ports:
+- Postgres: `localhost:5432` (not `postgres:5432`)
+- Kafka: `localhost:29092` (not `kafka:9092`)
+
+Check if services are accessible:
+```bash
+# Test Postgres
+nc -zv localhost 5432
+
+# Test Kafka
+nc -zv localhost 29092
+```
+
+### Frontend not connecting to backend
+
+Verify backend is running:
+```bash
+curl http://localhost:8000/health
+```
+
+Check environment variables in frontend:
+```bash
+# Should be set in .env.local or environment
+echo $NEXT_PUBLIC_API_URL
+echo $NEXT_PUBLIC_WS_URL
+```
+
+### Port conflicts
+
+If ports are already in use, modify the port mappings in the compose file:
+```yaml
+ports:
+  - "5433:5432"  # Change host port (5433) instead of container port
+```
+
+### Clearing all data
+
+To reset everything including volumes:
+```bash
+docker-compose -f docker-compose.dev.yml down -v
+# or
+docker-compose -f docker-compose.full.yml down -v
 ```
 
 ## License
@@ -227,3 +401,6 @@ MIT
 ## Contributors
 
 Built with FastAPI, Next.js, Kafka, and PostgreSQL.
+
+
+
