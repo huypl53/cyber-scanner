@@ -15,6 +15,7 @@ from datetime import datetime
 import json
 import logging
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +37,7 @@ class KafkaConsumerService:
         self.self_healing = SelfHealingService()
         self.ws_manager = get_connection_manager()
         self.running = False
+        self.executor = ThreadPoolExecutor(max_workers=1)
 
     def start(self):
         """Start the Kafka consumer."""
@@ -57,6 +59,8 @@ class KafkaConsumerService:
         if self.consumer:
             self.consumer.close()
             logger.info("Kafka consumer stopped")
+        if self.executor:
+            self.executor.shutdown(wait=False)
 
     async def consume_messages(self):
         """
@@ -69,8 +73,15 @@ class KafkaConsumerService:
         logger.info("Starting message consumption...")
 
         try:
+            loop = asyncio.get_event_loop()
+
             while self.running:
-                msg = self.consumer.poll(timeout=1.0)
+                # Run the blocking poll() call in a thread pool executor
+                msg = await loop.run_in_executor(
+                    self.executor,
+                    self.consumer.poll,
+                    1.0
+                )
 
                 if msg is None:
                     continue
