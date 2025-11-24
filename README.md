@@ -14,6 +14,7 @@ A comprehensive, real-time network threat detection system with automated self-h
 ## Architecture
 
 ### Backend (FastAPI)
+
 - RESTful API for data upload and predictions
 - WebSocket endpoint for real-time updates
 - Kafka consumer for streaming data
@@ -21,12 +22,14 @@ A comprehensive, real-time network threat detection system with automated self-h
 - Mock ML models (Ensemble & Decision Tree)
 
 ### Frontend (Next.js 14)
+
 - Interactive dashboards with charts
 - Real-time monitoring with WebSocket
 - CSV upload interface
 - Responsive design with Tailwind CSS
 
 ### Infrastructure
+
 - PostgreSQL: Data storage
 - Kafka + Zookeeper: Message streaming
 - Docker Compose: Service orchestration
@@ -34,6 +37,7 @@ A comprehensive, real-time network threat detection system with automated self-h
 ## Quick Start
 
 ### Prerequisites
+
 - Docker and Docker Compose
 - Node.js 20+ (for local development)
 - Python 3.11+ (for local development)
@@ -41,37 +45,42 @@ A comprehensive, real-time network threat detection system with automated self-h
 ### Option 1: Full Stack with Docker (Production-like)
 
 1. Clone the repository:
+
 ```bash
 cd ui
 ```
 
 2. Start all services:
+
 ```bash
-docker-compose -f docker-compose.full.yml up -d
+docker-compose --env-file .env.example -f docker-compose.full.yml up -d
 ```
 
 3. Wait for services to be healthy (check with `docker-compose ps`)
 
 4. Access the application:
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:8000
-   - API Docs: http://localhost:8000/docs
+   - Frontend: <http://localhost:3000>
+   - Backend API: <http://localhost:8000>
+   - API Docs: <http://localhost:8000/docs>
 
 ### Option 2: Development Mode (Recommended)
 
 This mode runs infrastructure services (Postgres, Kafka, Zookeeper) in Docker while allowing you to run backend and frontend locally for faster development.
 
 #### Step 1: Start Infrastructure Services
+
 ```bash
-docker-compose -f docker-compose.dev.yml up -d
+docker-compose --env-file .env -f docker-compose.dev.yml up -d
 ```
 
 This starts:
+
 - PostgreSQL on port 5432
 - Kafka on ports 9092 (internal) and 29092 (host)
 - Zookeeper on port 2181
 
 #### Step 2: Run Backend Locally
+
 ```bash
 cd backend
 uv venv
@@ -87,6 +96,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 #### Step 3: Run Frontend Locally
+
 ```bash
 cd frontend
 npm install
@@ -96,13 +106,15 @@ npm run dev
 ```
 
 #### Step 4: Access the Application
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8000
-- API Docs: http://localhost:8000/docs
+
+- Frontend: <http://localhost:3000>
+- Backend API: <http://localhost:8000>
+- API Docs: <http://localhost:8000/docs>
 
 ### Stopping Services
 
 For development mode:
+
 ```bash
 # Stop backend and frontend (Ctrl+C in their terminals)
 # Stop infrastructure services
@@ -110,6 +122,7 @@ docker-compose -f docker-compose.dev.yml down
 ```
 
 For full stack:
+
 ```bash
 docker-compose -f docker-compose.full.yml down
 ```
@@ -117,33 +130,39 @@ docker-compose -f docker-compose.full.yml down
 ## Usage Guide
 
 ### 1. Upload CSV Data
-- Navigate to http://localhost:3000
+
+- Navigate to <http://localhost:3000>
 - Click "Upload" or drag and drop a CSV file
 - Wait for processing to complete
 - View results in the dashboard
 
 ### 2. View Dashboard
+
 - Go to Dashboard tab
 - See threat statistics and attack distribution
 - View prediction history and self-healing actions
 
 ### 3. Monitor Real-time Traffic
+
 - Navigate to "Real-time Monitor"
 - Click "Start Test Stream" to generate sample traffic
 - Watch live predictions appear
 
 ### 4. API Documentation
-- Visit http://localhost:8000/docs for interactive API documentation
+
+- Visit <http://localhost:8000/docs> for interactive API documentation
 - Test endpoints directly from the browser
 
 ## API Endpoints
 
 ### Upload
+
 - `POST /api/v1/upload/csv` - Upload CSV file for analysis
 - `GET /api/v1/upload/batches` - List uploaded batches
 - `GET /api/v1/upload/batch/{batch_id}` - Get batch predictions
 
 ### Predictions
+
 - `GET /api/v1/predictions/recent` - Get recent predictions
 - `GET /api/v1/predictions/stats` - Get prediction statistics
 - `GET /api/v1/predictions/threats` - Get threat predictions
@@ -151,21 +170,25 @@ docker-compose -f docker-compose.full.yml down
 - `GET /api/v1/predictions/actions` - Get self-healing actions
 
 ### Testing
+
 - `POST /api/v1/test/start-stream` - Start test data stream
 - `POST /api/v1/test/send-single` - Send single test message
 
 ### WebSocket
+
 - `WS /ws/realtime` - Real-time prediction updates
 
 ## Data Formats
 
 ### Threat Detection (10 features)
+
 ```csv
 service,flag,src_bytes,dst_bytes,count,same_srv_rate,diff_srv_rate,dst_host_srv_count,dst_host_same_srv_rate,dst_host_same_src_port_rate
 5,2,1500,2000,10,0.8,0.1,50,0.75,0.9
 ```
 
 ### Attack Classification (42 features)
+
 See research/README.md for complete feature list.
 
 ## Attack Types Detected
@@ -195,18 +218,21 @@ See research/README.md for complete feature list.
 ## Testing
 
 ### Backend Tests (pytest)
+
 ```bash
 cd backend
 pytest
 ```
 
 ### Frontend Tests (jest)
+
 ```bash
 cd frontend
 npm test
 ```
 
 ### E2E Tests (playwright)
+
 ```bash
 cd frontend
 npm run test:e2e
@@ -234,6 +260,7 @@ This project includes three Docker Compose configurations:
    - All services communicate via Docker network
 
 ### Backend Structure
+
 ```
 backend/
 ├── app/
@@ -247,6 +274,7 @@ backend/
 ```
 
 ### Frontend Structure
+
 ```
 frontend/
 ├── app/                  # Next.js pages
@@ -302,12 +330,14 @@ See `.env.example` for all configuration options.
 ### Services not starting
 
 For development mode:
+
 ```bash
 docker-compose -f docker-compose.dev.yml down -v
 docker-compose -f docker-compose.dev.yml up -d
 ```
 
 For full stack:
+
 ```bash
 docker-compose -f docker-compose.full.yml down -v
 docker-compose -f docker-compose.full.yml up -d
@@ -316,6 +346,7 @@ docker-compose -f docker-compose.full.yml up -d
 ### Database connection issues
 
 Check PostgreSQL logs:
+
 ```bash
 docker-compose -f docker-compose.dev.yml logs postgres
 # or
@@ -323,6 +354,7 @@ docker-compose -f docker-compose.full.yml logs postgres
 ```
 
 Test connection from host:
+
 ```bash
 psql -h localhost -U user -d threat_detection_db
 # Password: password
@@ -331,19 +363,36 @@ psql -h localhost -U user -d threat_detection_db
 ### Kafka not receiving messages
 
 Check Kafka logs:
+
 ```bash
 docker-compose -f docker-compose.dev.yml logs kafka
 ```
 
+Create sample kafka topic:
+
+```bash
+ocker exec threat-detection-kafka kafka-topics --create --topic predictions --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1
+```
+
 List Kafka topics:
+
 ```bash
 docker exec threat-detection-kafka kafka-topics --list --bootstrap-server localhost:9092
 ```
 
+Send message to topic:
+```bash
+echo '{"timestamp":"2025-10-27T12:00:00Z","src":"10.0.1.10","dst":"93.184.216.34","bytes_sent":1452,"bytes_received":8901}' \
+| docker exec -i threat-detection-kafka kafka-console-producer \
+    --broker-list kafka:9092 \
+    --topic network-traffic
+```
+
 Consume messages from topic:
+
 ```bash
 docker exec threat-detection-kafka kafka-console-consumer \
-  --bootstrap-server localhost:9092 \
+  --bootstrap-server kafka:9092 \
   --topic network-traffic \
   --from-beginning
 ```
@@ -351,10 +400,12 @@ docker exec threat-detection-kafka kafka-console-consumer \
 ### Backend not connecting to services
 
 When running backend locally, ensure you're using the correct ports:
+
 - Postgres: `localhost:5432` (not `postgres:5432`)
 - Kafka: `localhost:29092` (not `kafka:9092`)
 
 Check if services are accessible:
+
 ```bash
 # Test Postgres
 nc -zv localhost 5432
@@ -366,11 +417,13 @@ nc -zv localhost 29092
 ### Frontend not connecting to backend
 
 Verify backend is running:
+
 ```bash
 curl http://localhost:8000/health
 ```
 
 Check environment variables in frontend:
+
 ```bash
 # Should be set in .env.local or environment
 echo $NEXT_PUBLIC_API_URL
@@ -380,6 +433,7 @@ echo $NEXT_PUBLIC_WS_URL
 ### Port conflicts
 
 If ports are already in use, modify the port mappings in the compose file:
+
 ```yaml
 ports:
   - "5433:5432"  # Change host port (5433) instead of container port
@@ -388,6 +442,7 @@ ports:
 ### Clearing all data
 
 To reset everything including volumes:
+
 ```bash
 docker-compose -f docker-compose.dev.yml down -v
 # or
@@ -401,6 +456,3 @@ MIT
 ## Contributors
 
 Built with FastAPI, Next.js, Kafka, and PostgreSQL.
-
-
-

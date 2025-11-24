@@ -2,7 +2,8 @@
 Kafka Consumer for real-time network traffic data.
 Consumes messages from Kafka, runs predictions, and broadcasts results via WebSocket.
 """
-from confluent_kafka import Consumer, KafkaException, KafkaError
+
+from confluent_kafka import Consumer, KafkaException, KafkaError, Message
 from app.core.config import settings
 from app.core.database import SessionLocal
 from app.services.preprocessor import DataPreprocessor
@@ -15,6 +16,7 @@ from datetime import datetime
 import json
 import logging
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -24,10 +26,10 @@ class KafkaConsumerService:
 
     def __init__(self):
         self.consumer_config = {
-            'bootstrap.servers': settings.KAFKA_BOOTSTRAP_SERVERS,
-            'group.id': settings.KAFKA_GROUP_ID,
-            'auto.offset.reset': 'latest',
-            'enable.auto.commit': True
+            "bootstrap.servers": settings.KAFKA_BOOTSTRAP_SERVERS,
+            "group.id": settings.KAFKA_GROUP_ID,
+            "auto.offset.reset": "latest",
+            "enable.auto.commit": True,
         }
         self.consumer = None
         self.preprocessor = DataPreprocessor()
@@ -36,6 +38,7 @@ class KafkaConsumerService:
         self.self_healing = SelfHealingService()
         self.ws_manager = get_connection_manager()
         self.running = False
+        self.executor = ThreadPoolExecutor(max_workers=1)
 
     def start(self):
         """Start the Kafka consumer."""
@@ -57,6 +60,8 @@ class KafkaConsumerService:
         if self.consumer:
             self.consumer.close()
             logger.info("Kafka consumer stopped")
+        if self.executor:
+            self.executor.shutdown(wait=False)
 
     async def consume_messages(self):
         """
@@ -69,8 +74,11 @@ class KafkaConsumerService:
         logger.info("Starting message consumption...")
 
         try:
+            loop = asyncio.get_event_loop()
+
             while self.running:
-                msg = self.consumer.poll(timeout=1.0)
+                # Run the blocking poll() call in a thread pool executor
+                msg = await loop.run_in_executor(self.executor, self.consumer.poll, 1.0)
 
                 if msg is None:
                     continue
@@ -92,14 +100,14 @@ class KafkaConsumerService:
         finally:
             self.stop()
 
-    async def process_message(self, msg):
+    async def process_message(self, msg: Message):
         """
         Process a single Kafka message.
         Runs prediction pipeline and broadcasts results.
         """
         try:
             # Parse message
-            data = json.loads(msg.value().decode('utf-8'))
+            data = json.loads(msg.value().decode("utf-8"))
             logger.debug(f"Received message: {data}")
 
             # Get database session
@@ -108,24 +116,18 @@ class KafkaConsumerService:
             try:
                 # Validate and extract features
                 features, model_type = self.preprocessor.validate_and_extract_features(
-                    data,
-                    model_type="auto"
+                    data, model_type="auto"
                 )
 
                 # Store traffic data
-                traffic_record = TrafficData(
-                    features=features,
-                    source='realtime'
-                )
+                traffic_record = TrafficData(features=features, source="realtime")
                 db.add(traffic_record)
                 db.commit()
                 db.refresh(traffic_record)
 
                 # Run threat detection
                 threat_prediction = self.threat_detector.predict(
-                    features,
-                    db,
-                    traffic_record.id
+                    features, db, traffic_record.id
                 )
 
                 # Build response data
@@ -136,24 +138,24 @@ class KafkaConsumerService:
                         "id": threat_prediction.id,
                         "prediction_score": threat_prediction.prediction_score,
                         "is_attack": threat_prediction.is_attack,
-                        "threshold": threat_prediction.threshold
+                        "threshold": threat_prediction.threshold,
                     },
                     "attack_prediction": None,
-                    "self_healing_action": None
+                    "self_healing_action": None,
                 }
 
                 # If attack detected and classification features available, classify
-                if threat_prediction.is_attack and model_type == "attack_classification":
+                if (
+                    threat_prediction.is_attack
+                    and model_type == "attack_classification"
+                ):
                     attack_prediction = self.attack_classifier.predict(
-                        features,
-                        db,
-                        traffic_record.id
+                        features, db, traffic_record.id
                     )
 
                     # Log self-healing action
                     self_healing_action = self.self_healing.log_action(
-                        attack_prediction,
-                        db
+                        attack_prediction, db
                     )
 
                     # Add to response
@@ -161,7 +163,7 @@ class KafkaConsumerService:
                         "id": attack_prediction.id,
                         "attack_type_encoded": attack_prediction.attack_type_encoded,
                         "attack_type_name": attack_prediction.attack_type_name,
-                        "confidence": attack_prediction.confidence
+                        "confidence": attack_prediction.confidence,
                     }
 
                     prediction_data["self_healing_action"] = {
@@ -169,7 +171,7 @@ class KafkaConsumerService:
                         "action_type": self_healing_action.action_type,
                         "action_description": self_healing_action.action_description,
                         "action_params": self_healing_action.action_params,
-                        "status": self_healing_action.status
+                        "status": self_healing_action.status,
                     }
 
                 # Broadcast to WebSocket clients

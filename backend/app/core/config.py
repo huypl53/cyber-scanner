@@ -28,7 +28,11 @@ class Settings(BaseSettings):
     WS_HEARTBEAT_INTERVAL: int = 30
 
     class Config:
-        env_file = ".env"
+        # Load from multiple locations with priority:
+        # 1. backend/.env (local override)
+        # 2. ../.env.local (root shared config)
+        # 3. ../.env (root fallback)
+        env_file = (".env", "../.env.local", "../.env")
         case_sensitive = True
 
 
