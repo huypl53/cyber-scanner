@@ -11,7 +11,7 @@ interface RealtimePrediction {
     prediction_score: number;
     is_attack: boolean;
     threshold: number;
-  };
+  } | null;
   attack_prediction?: {
     attack_type_name: string;
     confidence: number;
@@ -56,7 +56,7 @@ export default function RealtimePage() {
 
   const stats = {
     total: predictions.length,
-    attacks: predictions.filter((p) => p.threat_prediction.is_attack).length,
+    attacks: predictions.filter((p) => p.threat_prediction?.is_attack).length,
   };
 
   return (
@@ -121,7 +121,7 @@ export default function RealtimePage() {
                 <div
                   key={index}
                   className={`p-4 ${
-                    pred.threat_prediction.is_attack ? 'bg-red-50' : 'bg-green-50'
+                    pred.threat_prediction?.is_attack || pred.attack_prediction ? 'bg-red-50' : 'bg-green-50'
                   } hover:opacity-75 transition-opacity`}
                 >
                   <div className="flex justify-between items-start">
@@ -129,22 +129,24 @@ export default function RealtimePage() {
                       <div className="flex items-center gap-2 mb-2">
                         <span
                           className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                            pred.threat_prediction.is_attack
+                            pred.threat_prediction?.is_attack || pred.attack_prediction
                               ? 'bg-red-600 text-white'
                               : 'bg-green-600 text-white'
                           }`}
                         >
-                          {pred.threat_prediction.is_attack ? 'ATTACK' : 'NORMAL'}
+                          {pred.threat_prediction?.is_attack || pred.attack_prediction ? 'ATTACK' : 'NORMAL'}
                         </span>
                         <span className="text-sm text-gray-600">
                           {new Date(pred.timestamp).toLocaleTimeString()}
                         </span>
                       </div>
                       <div className="text-sm space-y-1">
-                        <p>
-                          <span className="font-medium">Threat Score:</span>{' '}
-                          {pred.threat_prediction.prediction_score.toFixed(3)}
-                        </p>
+                        {pred.threat_prediction && (
+                          <p>
+                            <span className="font-medium">Threat Score:</span>{' '}
+                            {pred.threat_prediction.prediction_score.toFixed(3)}
+                          </p>
+                        )}
                         {pred.attack_prediction && (
                           <>
                             <p>

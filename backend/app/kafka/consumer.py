@@ -125,30 +125,30 @@ class KafkaConsumerService:
                 db.commit()
                 db.refresh(traffic_record)
 
-                # Run threat detection
-                threat_prediction = self.threat_detector.predict(
-                    features, db, traffic_record.id
-                )
-
-                # Build response data
+                # Initialize response data
                 prediction_data = {
                     "timestamp": datetime.utcnow().isoformat(),
                     "traffic_data_id": traffic_record.id,
-                    "threat_prediction": {
-                        "id": threat_prediction.id,
-                        "prediction_score": threat_prediction.prediction_score,
-                        "is_attack": threat_prediction.is_attack,
-                        "threshold": threat_prediction.threshold,
-                    },
+                    "threat_prediction": None,
                     "attack_prediction": None,
                     "self_healing_action": None,
                 }
 
-                # If attack detected and classification features available, classify
-                if (
-                    threat_prediction.is_attack
-                    and model_type == "attack_classification"
-                ):
+                # Run threat detection if threat detection features are available
+                if model_type == "threat_detection":
+                    threat_prediction = self.threat_detector.predict(
+                        features, db, traffic_record.id
+                    )
+
+                    prediction_data["threat_prediction"] = {
+                        "id": threat_prediction.id,
+                        "prediction_score": threat_prediction.prediction_score,
+                        "is_attack": threat_prediction.is_attack,
+                        "threshold": threat_prediction.threshold,
+                    }
+
+                # Run attack classification if classification features are available
+                elif model_type == "attack_classification":
                     attack_prediction = self.attack_classifier.predict(
                         features, db, traffic_record.id
                     )
@@ -177,10 +177,17 @@ class KafkaConsumerService:
                 # Broadcast to WebSocket clients
                 await self.ws_manager.broadcast_prediction(prediction_data)
 
-                logger.info(
-                    f"Processed message: Traffic ID {traffic_record.id}, "
-                    f"Attack: {threat_prediction.is_attack}"
-                )
+                # Log processing result
+                if model_type == "threat_detection":
+                    logger.info(
+                        f"Processed message: Traffic ID {traffic_record.id}, "
+                        f"Model: {model_type}, Attack: {prediction_data['threat_prediction']['is_attack']}"
+                    )
+                elif model_type == "attack_classification":
+                    logger.info(
+                        f"Processed message: Traffic ID {traffic_record.id}, "
+                        f"Model: {model_type}, Attack Type: {prediction_data['attack_prediction']['attack_type_name']}"
+                    )
 
             except Exception as e:
                 logger.error(f"Error processing message: {e}")

@@ -381,12 +381,26 @@ docker exec threat-detection-kafka kafka-topics --list --bootstrap-server localh
 ```
 
 Send message to topic:
+
+#### Option 1: Threat Detection (10 features) - Binary classification (Normal vs Attack)
+
 ```bash
-echo '{"timestamp":"2025-10-27T12:00:00Z","src":"10.0.1.10","dst":"93.184.216.34","bytes_sent":1452,"bytes_received":8901}' \
+echo '{"service":5,"flag":2,"src_bytes":1500,"dst_bytes":2000,"count":10,"same_srv_rate":0.8,"diff_srv_rate":0.1,"dst_host_srv_count":50,"dst_host_same_srv_rate":0.75,"dst_host_same_src_port_rate":0.9}' \
 | docker exec -i threat-detection-kafka kafka-console-producer \
     --broker-list kafka:9092 \
     --topic network-traffic
 ```
+
+#### Option 2: Attack Classification (42 features) - Multi-class attack type detection
+
+```bash
+echo '{" Destination Port":80," Flow Duration":5000," Total Fwd Packets":50,"Total Length of Fwd Packets":5000," Fwd Packet Length Max":1500," Fwd Packet Length Min":60,"Bwd Packet Length Max":1500," Bwd Packet Length Min":60,"Flow Bytes/s":1000," Flow Packets/s":10," Flow IAT Mean":100," Flow IAT Std":50," Flow IAT Min":10,"Bwd IAT Total":500," Bwd IAT Std":25,"Fwd PSH Flags":1," Bwd PSH Flags":1," Fwd URG Flags":0," Bwd URG Flags":0," Fwd Header Length":200," Bwd Header Length":200," Bwd Packets/s":5," Min Packet Length":60,"FIN Flag Count":1," RST Flag Count":0," PSH Flag Count":2," ACK Flag Count":10," URG Flag Count":0," Down/Up Ratio":0.5,"Fwd Avg Bytes/Bulk":500," Fwd Avg Packets/Bulk":5," Fwd Avg Bulk Rate":100," Bwd Avg Bytes/Bulk":500," Bwd Avg Packets/Bulk":5,"Bwd Avg Bulk Rate":100,"Init_Win_bytes_forward":8192," Init_Win_bytes_backward":8192," min_seg_size_forward":20,"Active Mean":100," Active Std":50," Active Max":200," Idle Std":25}' \
+| docker exec -i threat-detection-kafka kafka-console-producer \
+    --broker-list kafka:9092 \
+    --topic network-traffic
+```
+
+> **Note**: The system auto-detects which model to use based on available features. Send either 10 threat detection features OR 42 attack classification features.
 
 Consume messages from topic:
 
