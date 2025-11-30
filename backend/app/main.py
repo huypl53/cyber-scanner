@@ -2,8 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.api.routes import upload, predictions, websocket
+from app.api.routes import upload, predictions, websocket, config, models
 from app.kafka.consumer import start_consumer_loop
+from app.kafka.external_consumer import start_external_consumer_loop
 import uvicorn
 import asyncio
 import logging
@@ -42,6 +43,8 @@ app.add_middleware(
 # Include routers
 app.include_router(upload.router, prefix=settings.API_V1_PREFIX, tags=["upload"])
 app.include_router(predictions.router, prefix=settings.API_V1_PREFIX, tags=["predictions"])
+app.include_router(config.router, prefix=f"{settings.API_V1_PREFIX}/config", tags=["configuration"])
+app.include_router(models.router, tags=["models"])  # Models router includes its own prefix
 app.include_router(websocket.router, prefix="/ws", tags=["websocket"])
 
 # Include test producer router (for development/testing)
@@ -54,13 +57,21 @@ async def startup_event():
     """Start background tasks on application startup."""
     logger.info("Starting AI Threat Detection System...")
 
-    # Start Kafka consumer in background
+    # Start internal Kafka consumer in background
     try:
         asyncio.create_task(start_consumer_loop())
-        logger.info("Kafka consumer task started")
+        logger.info("Internal Kafka consumer task started")
     except Exception as e:
-        logger.warning(f"Could not start Kafka consumer: {e}")
-        logger.warning("Kafka consumer will not be available. Real-time features disabled.")
+        logger.warning(f"Could not start internal Kafka consumer: {e}")
+        logger.warning("Internal Kafka consumer will not be available. Real-time features disabled.")
+
+    # Start external Kafka consumer in background (if enabled)
+    try:
+        asyncio.create_task(start_external_consumer_loop())
+        logger.info("External Kafka consumer task started")
+    except Exception as e:
+        logger.warning(f"Could not start external Kafka consumer: {e}")
+        logger.warning("External Kafka consumer will not be available.")
 
 
 @app.on_event("shutdown")

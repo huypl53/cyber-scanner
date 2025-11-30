@@ -88,8 +88,10 @@ services:
       POSTGRES_DB: threat_detection_db
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       KAFKA_TOPIC_REALTIME_DATA: network-traffic
+      KAFKA_TOPIC_EXTERNAL_DATA: external-traffic
       KAFKA_TOPIC_PREDICTIONS: predictions
       KAFKA_GROUP_ID: threat-detection-consumer
+      KAFKA_EXTERNAL_CONSUMER_GROUP: external-data-consumer
       API_V1_PREFIX: /api/v1
       PROJECT_NAME: "AI Threat Detection System"
       DEBUG: "False"
@@ -97,6 +99,11 @@ services:
       WS_HEARTBEAT_INTERVAL: 30
     volumes:
       - ./backend:/app
+    # Network capabilities for packet capture (optional - for future use)
+    # Uncomment these lines when implementing packet capture:
+    # cap_add:
+    #   - NET_ADMIN
+    #   - NET_RAW
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 10s

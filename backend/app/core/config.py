@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     KAFKA_TOPIC_PREDICTIONS: str = "predictions"
     KAFKA_GROUP_ID: str = "threat-detection-consumer"
 
+    # External Kafka (for external data providers)
+    KAFKA_TOPIC_EXTERNAL_DATA: str = "external-traffic"
+    KAFKA_EXTERNAL_CONSUMER_GROUP: str = "external-data-consumer"
+
     # CORS
     BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000"]
 
