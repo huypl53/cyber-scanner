@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     KAFKA_EXTERNAL_CONSUMER_GROUP: str = "external-data-consumer"
 
     # CORS
-    BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000"]
+    BACKEND_CORS_ORIGINS: List[str] = ["*"]
 
     # WebSocket
     WS_HEARTBEAT_INTERVAL: int = 30

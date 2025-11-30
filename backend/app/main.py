@@ -31,14 +31,18 @@ app = FastAPI(
     debug=settings.DEBUG
 )
 
-# Configure CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.BACKEND_CORS_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Configure CORS (allow wildcard when configured)
+cors_kwargs = {
+    "allow_credentials": True,
+    "allow_methods": ["*"],
+    "allow_headers": ["*"],
+}
+if "*" in settings.BACKEND_CORS_ORIGINS:
+    cors_kwargs.update({"allow_origins": ["*"], "allow_origin_regex": ".*"})
+else:
+    cors_kwargs.update({"allow_origins": settings.BACKEND_CORS_ORIGINS})
+
+app.add_middleware(CORSMiddleware, **cors_kwargs)
 
 # Include routers
 app.include_router(upload.router, prefix=settings.API_V1_PREFIX, tags=["upload"])

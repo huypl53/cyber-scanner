@@ -95,7 +95,7 @@ services:
       API_V1_PREFIX: /api/v1
       PROJECT_NAME: "AI Threat Detection System"
       DEBUG: "False"
-      BACKEND_CORS_ORIGINS: '["http://localhost:3000"]'
+      BACKEND_CORS_ORIGINS: '["*"]'
       WS_HEARTBEAT_INTERVAL: 30
     volumes:
       - ./backend:/app

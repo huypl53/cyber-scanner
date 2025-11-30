@@ -14,9 +14,9 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Set environment variables for build
-ENV NEXT_PUBLIC_API_URL=http://backend:8000
-ENV NEXT_PUBLIC_WS_URL=ws://backend:8000
+# Set environment variables for build (public values the browser can reach)
+ENV NEXT_PUBLIC_API_URL=http://localhost:8000
+ENV NEXT_PUBLIC_WS_URL=ws://localhost:8000
 
 RUN npm run build
 
