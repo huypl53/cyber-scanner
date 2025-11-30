@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 # Import the Base and models
 from app.core.database import Base
-from app.models.database import TrafficData, ThreatPrediction, AttackPrediction, SelfHealingAction
+from app.models.database import TrafficData, ThreatPrediction, AttackPrediction, SelfHealingAction, IPWhitelist, DataSourceConfig
 from app.core.config import settings
 
 # this is the Alembic Config object, which provides

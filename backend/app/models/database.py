@@ -18,7 +18,7 @@ class TrafficData(Base):
     features = Column(JSON, nullable=False)
 
     # Source of data
-    source = Column(String, nullable=False)  # 'upload' or 'realtime'
+    source = Column(String, nullable=False)  # 'upload', 'realtime', 'packet_capture', 'external_kafka'
     batch_id = Column(String, nullable=True, index=True)  # For grouping uploaded CSV rows
 
     # Relationships
@@ -96,3 +96,62 @@ class SelfHealingAction(Base):
 
     # Relationships
     attack_prediction = relationship("AttackPrediction", back_populates="self_healing_action")
+
+
+class IPWhitelist(Base):
+    """
+    Stores IP addresses allowed to send data via external Kafka topic.
+    Provides IP-based access control for external data providers.
+    """
+    __tablename__ = "ip_whitelist"
+
+    id = Column(Integer, primary_key=True, index=True)
+    ip_address = Column(String(45), unique=True, nullable=False, index=True)  # Supports IPv4 and IPv6
+    description = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    is_active = Column(Boolean, default=True, index=True)
+    created_by = Column(String(100), nullable=True)  # For future authentication
+
+
+class DataSourceConfig(Base):
+    """
+    Stores configuration for different data sources (packet capture, external Kafka, etc.).
+    Allows enabling/disabling data sources independently.
+    """
+    __tablename__ = "data_source_config"
+
+    id = Column(Integer, primary_key=True, index=True)
+    source_name = Column(String(50), unique=True, nullable=False, index=True)  # e.g., 'packet_capture', 'external_kafka'
+    is_enabled = Column(Boolean, default=False)
+    description = Column(Text, nullable=True)
+    config_params = Column(JSON, nullable=True)  # Source-specific config (e.g., interface name, topic name)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class MLModel(Base):
+    """
+    Stores ML model versions with file paths, validation results, and activation status.
+    Supports multiple model types (threat_detector, attack_classifier) with version history.
+    """
+    __tablename__ = "ml_models"
+
+    id = Column(Integer, primary_key=True, index=True)
+    model_type = Column(String(50), nullable=False, index=True)  # 'threat_detector', 'attack_classifier'
+    version = Column(String(100), nullable=False, index=True)  # Timestamp-based: '20251128_143022'
+    file_path = Column(String(500), nullable=False)  # Absolute path to model file on disk
+    file_format = Column(String(20), nullable=False)  # '.pkl', '.joblib', '.h5'
+    original_filename = Column(String(255), nullable=False)  # Original uploaded filename
+
+    # Activation status - only one active model per model_type
+    is_active = Column(Boolean, default=False, index=True)
+
+    # Metadata and validation
+    model_metadata = Column(JSON, nullable=True)  # Architecture info: input_shape, output_shape, etc.
+    validation_results = Column(JSON, nullable=True)  # Test prediction results
+    file_size_bytes = Column(Integer, nullable=True)  # File size for storage management
+
+    # Audit fields
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    uploaded_by = Column(String(100), nullable=True)  # For future authentication
+    description = Column(Text, nullable=True)  # Optional user description
