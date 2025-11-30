@@ -69,7 +69,8 @@ class ModelValidator:
         self,
         file_path: str,
         model_type: str,
-        file_format: str
+        file_format: str,
+        profile_config: Dict[str, Any] = None
     ) -> Dict[str, Any]:
         """
         Validate an uploaded model file.
@@ -78,6 +79,7 @@ class ModelValidator:
             file_path: Path to the uploaded model file
             model_type: Type of model ('threat_detector' or 'attack_classifier')
             file_format: File extension ('.pkl', '.joblib', or '.h5')
+            profile_config: Optional model profile with expected_features and class_labels
 
         Returns:
             Dictionary with validation results including:
@@ -85,15 +87,26 @@ class ModelValidator:
             - error_message: str (if validation failed)
             - model_metadata: dict (architecture info)
             - test_prediction: dict (sample prediction results)
+            - profile_config: dict (feature and class configuration)
 
         Raises:
             ModelValidationError: If validation fails
         """
+        # Use default shapes if no profile provided (backward compatibility)
+        if profile_config is None:
+            expected_features = self.EXPECTED_SHAPES.get(model_type, 42)
+            expected_classes = 14 if model_type == 'attack_classifier' else 2
+            profile_config = {
+                'expected_features': [f'feature_{i}' for i in range(expected_features)],
+                'class_labels': [f'class_{i}' for i in range(expected_classes)]
+            }
+
         validation_result = {
             'is_valid': False,
             'error_message': None,
             'model_metadata': {},
-            'test_prediction': None
+            'test_prediction': None,
+            'profile_config': profile_config
         }
 
         try:
@@ -104,11 +117,11 @@ class ModelValidator:
             model = self._load_model(file_path, file_format)
 
             # Step 3: Validate model architecture
-            metadata = self._validate_architecture(model, model_type, file_format)
+            metadata = self._validate_architecture(model, model_type, file_format, profile_config)
             validation_result['model_metadata'] = metadata
 
             # Step 4: Run test prediction
-            test_result = self._test_prediction(model, model_type, file_format)
+            test_result = self._test_prediction(model, model_type, file_format, profile_config)
             validation_result['test_prediction'] = test_result
 
             # All validations passed
@@ -170,16 +183,20 @@ class ModelValidator:
         self,
         model: Any,
         model_type: str,
-        file_format: str
+        file_format: str,
+        profile_config: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Validate that model architecture matches expected input/output shapes."""
-        expected_features = self.EXPECTED_SHAPES.get(model_type)
-        if expected_features is None:
-            raise ModelValidationError(f"Unknown model type: {model_type}")
+        expected_features = len(profile_config.get('expected_features', []))
+        expected_classes = len(profile_config.get('class_labels', []))
+
+        if expected_features == 0:
+            raise ModelValidationError("Profile configuration must specify expected_features")
 
         metadata = {
             'model_type': model_type,
-            'expected_input_features': expected_features
+            'expected_input_features': int(expected_features),
+            'expected_output_classes': int(expected_classes)
         }
 
         try:
@@ -191,7 +208,7 @@ class ModelValidator:
 
                 # Extract feature count (last dimension)
                 actual_features = input_shape[-1] if len(input_shape) > 1 else input_shape[0]
-                metadata['actual_input_features'] = actual_features
+                metadata['actual_input_features'] = int(actual_features)
                 metadata['input_shape'] = list(input_shape)
                 metadata['output_shape'] = list(model.output_shape)
 
@@ -205,7 +222,7 @@ class ModelValidator:
                 # sklearn model - try to get feature count from n_features_in_
                 if hasattr(model, 'n_features_in_'):
                     actual_features = model.n_features_in_
-                    metadata['actual_input_features'] = actual_features
+                    metadata['actual_input_features'] = int(actual_features)
 
                     if actual_features != expected_features:
                         raise ModelValidationError(
@@ -218,8 +235,8 @@ class ModelValidator:
 
             # Get additional metadata
             if hasattr(model, 'classes_'):
-                metadata['num_classes'] = len(model.classes_)
-                metadata['classes'] = list(model.classes_)
+                metadata['num_classes'] = int(len(model.classes_))
+                metadata['classes'] = [c.item() if hasattr(c, "item") else c for c in model.classes_]
 
         except ModelValidationError:
             raise
@@ -232,12 +249,17 @@ class ModelValidator:
         self,
         model: Any,
         model_type: str,
-        file_format: str
+        file_format: str,
+        profile_config: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Run a test prediction to ensure model works correctly."""
-        test_data = self.TEST_DATA.get(model_type)
-        if test_data is None:
-            raise ModelValidationError(f"No test data available for model type: {model_type}")
+        # Generate test data based on expected features
+        num_features = len(profile_config.get('expected_features', []))
+        if num_features == 0:
+            raise ModelValidationError("Cannot generate test data: no expected_features in profile")
+
+        # Generate random test data
+        test_data = np.random.randn(1, num_features).astype(np.float32)
 
         try:
             if file_format == '.h5':

@@ -40,6 +40,71 @@ class DataPreprocessor:
         self.ensemble_model = EnsembleModel()
         self.decision_tree_model = DecisionTreeModel()
 
+    def validate_and_extract_features_with_profile(
+        self,
+        raw_data: Dict[str, Any],
+        expected_features: List[str],
+        allow_extra_columns: bool = True
+    ) -> Dict[str, float]:
+        """
+        Extract and validate features based on a custom feature profile.
+
+        Args:
+            raw_data: Raw feature dictionary from CSV or API
+            expected_features: Ordered list of required feature names
+            allow_extra_columns: If True, extra columns are ignored with a warning; if False, they cause an error
+
+        Returns:
+            Dictionary of validated features in the expected order
+
+        Raises:
+            ValueError: If required features are missing or validation fails
+        """
+        features = {}
+        missing_features = []
+        extra_columns = []
+
+        # Check for required features
+        for feature_name in expected_features:
+            if feature_name not in raw_data:
+                # Try to find feature with slight variations (spaces, case)
+                found = False
+                for key in raw_data.keys():
+                    if key.strip().lower() == feature_name.strip().lower():
+                        features[feature_name] = self._convert_to_float(
+                            raw_data[key], feature_name
+                        )
+                        found = True
+                        break
+
+                if not found:
+                    missing_features.append(feature_name)
+            else:
+                features[feature_name] = self._convert_to_float(
+                    raw_data[feature_name], feature_name
+                )
+
+        # Check for extra columns
+        raw_data_keys = set(raw_data.keys())
+        expected_keys = set(expected_features)
+        extra_columns = list(raw_data_keys - expected_keys)
+
+        # Raise error if required features are missing
+        if missing_features:
+            raise ValueError(
+                f"Missing required features: {', '.join(missing_features)}. "
+                f"Expected {len(expected_features)} features but found {len(raw_data)} columns."
+            )
+
+        # Handle extra columns
+        if extra_columns and not allow_extra_columns:
+            raise ValueError(
+                f"Unexpected columns found: {', '.join(extra_columns)}. "
+                f"Only the {len(expected_features)} expected features are allowed."
+            )
+
+        return features
+
     def validate_and_extract_features(
         self,
         raw_data: Dict[str, Any],

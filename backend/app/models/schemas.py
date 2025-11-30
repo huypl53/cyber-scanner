@@ -143,6 +143,13 @@ class DataSourceConfigResponse(BaseModel):
 
 
 # ML Model Management Schemas
+class ModelProfileConfig(BaseModel):
+    """Configuration for model feature and class requirements"""
+    expected_features: Optional[List[str]] = Field(None, description="Ordered list of feature names required by model")
+    class_labels: Optional[List[str]] = Field(None, description="Ordered list of class label names (for classifiers)")
+    preprocessing_notes: Optional[str] = Field(None, description="Optional preprocessing instructions/notes")
+
+
 class MLModelUploadRequest(BaseModel):
     model_type: str = Field(..., description="Type of model: 'threat_detector' or 'attack_classifier'")
     description: Optional[str] = Field(None, description="Optional description of the model")
@@ -159,6 +166,9 @@ class MLModelResponse(BaseModel):
     model_metadata: Optional[Dict[str, Any]]
     validation_results: Optional[Dict[str, Any]]
     file_size_bytes: Optional[int]
+    expected_features: Optional[List[str]]
+    class_labels: Optional[List[str]]
+    preprocessing_notes: Optional[str]
     created_at: datetime
     uploaded_by: Optional[str]
     description: Optional[str]

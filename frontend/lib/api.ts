@@ -233,9 +233,18 @@ export interface MLModel {
   model_metadata?: Record<string, any>;
   validation_results?: Record<string, any>;
   file_size_bytes?: number;
+  expected_features?: string[];
+  class_labels?: string[];
+  preprocessing_notes?: string;
   created_at: string;
   uploaded_by?: string;
   description?: string;
+}
+
+export interface ModelProfile {
+  expected_features?: string[];
+  class_labels?: string[];
+  preprocessing_notes?: string;
 }
 
 export interface MLModelListResponse {
@@ -259,13 +268,17 @@ export interface MLModelStorageStats {
 export const uploadModel = async (
   file: File,
   modelType: string,
-  description?: string
+  description?: string,
+  profileConfig?: ModelProfile
 ): Promise<MLModel> => {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('model_type', modelType);
   if (description) {
     formData.append('description', description);
+  }
+  if (profileConfig) {
+    formData.append('profile_config', JSON.stringify(profileConfig));
   }
 
   const response = await api.post('/api/v1/models/upload', formData, {
@@ -315,6 +328,12 @@ export const deleteModel = async (modelId: number, deleteFile: boolean = true): 
   await api.delete(`/api/v1/models/${modelId}`, {
     params: { delete_file: deleteFile },
   });
+};
+
+// Get active model profile
+export const getActiveModelProfile = async (modelType: string): Promise<{ model_type: string; profile: ModelProfile }> => {
+  const response = await api.get(`/api/v1/models/profile/${modelType}`);
+  return response.data;
 };
 
 // Get storage statistics

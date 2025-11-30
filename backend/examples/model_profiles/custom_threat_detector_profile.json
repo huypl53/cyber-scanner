@@ -1,0 +1,19 @@
+{
+  "expected_features": [
+    "packet_count",
+    "byte_rate",
+    "connection_duration",
+    "src_port",
+    "dst_port",
+    "protocol_type",
+    "flag_count",
+    "error_rate",
+    "syn_count",
+    "rst_count"
+  ],
+  "class_labels": [
+    "Normal",
+    "Attack"
+  ],
+  "preprocessing_notes": "Custom 10-feature threat detection model. Features extracted from network flow data using tshark."
+}

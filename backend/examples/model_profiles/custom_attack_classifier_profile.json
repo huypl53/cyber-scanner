@@ -1,0 +1,40 @@
+{
+  "expected_features": [
+    "src_ip_entropy",
+    "dst_port",
+    "packet_count",
+    "byte_rate",
+    "connection_duration",
+    "tcp_flags",
+    "protocol_type",
+    "service_type",
+    "flag_count",
+    "error_rate",
+    "syn_count",
+    "rst_count",
+    "ack_count",
+    "fin_count",
+    "window_size",
+    "urgent_pointer",
+    "data_offset",
+    "checksum_error",
+    "retransmission_rate",
+    "inter_packet_delay",
+    "payload_size_mean",
+    "payload_size_std",
+    "header_length_mean",
+    "ttl_mean",
+    "ip_flags"
+  ],
+  "class_labels": [
+    "BENIGN",
+    "DDoS",
+    "PortScan",
+    "BruteForce",
+    "SQLInjection",
+    "XSS",
+    "CommandInjection",
+    "Botnet"
+  ],
+  "preprocessing_notes": "Custom 25-feature attack classifier trained on CIC-IDS2017 + custom dataset. Uses feature engineering from pcap files with emphasis on behavioral patterns."
+}

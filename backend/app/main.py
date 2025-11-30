@@ -11,8 +11,7 @@ import logging
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -22,13 +21,15 @@ try:
     logger.info("Database tables created successfully")
 except Exception as e:
     logger.warning(f"Could not create database tables: {e}")
-    logger.warning("Database features will not be available. API may have limited functionality.")
+    logger.warning(
+        "Database features will not be available. API may have limited functionality."
+    )
 
 # Initialize FastAPI app
 app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url=f"{settings.API_V1_PREFIX}/openapi.json",
-    debug=settings.DEBUG
+    debug=settings.DEBUG,
 )
 
 # Configure CORS (allow wildcard when configured)
@@ -37,23 +38,33 @@ cors_kwargs = {
     "allow_methods": ["*"],
     "allow_headers": ["*"],
 }
-if "*" in settings.BACKEND_CORS_ORIGINS:
-    cors_kwargs.update({"allow_origins": ["*"], "allow_origin_regex": ".*"})
-else:
-    cors_kwargs.update({"allow_origins": settings.BACKEND_CORS_ORIGINS})
+cors_kwargs.update({"allow_origins": ["*"], "allow_origin_regex": ".*"})
+# if "*" in settings.BACKEND_CORS_ORIGINS:
+#     cors_kwargs.update({"allow_origins": ["*"], "allow_origin_regex": ".*"})
+# else:
+#     cors_kwargs.update({"allow_origins": settings.BACKEND_CORS_ORIGINS})
 
 app.add_middleware(CORSMiddleware, **cors_kwargs)
 
 # Include routers
 app.include_router(upload.router, prefix=settings.API_V1_PREFIX, tags=["upload"])
-app.include_router(predictions.router, prefix=settings.API_V1_PREFIX, tags=["predictions"])
-app.include_router(config.router, prefix=f"{settings.API_V1_PREFIX}/config", tags=["configuration"])
-app.include_router(models.router, tags=["models"])  # Models router includes its own prefix
+app.include_router(
+    predictions.router, prefix=settings.API_V1_PREFIX, tags=["predictions"]
+)
+app.include_router(
+    config.router, prefix=f"{settings.API_V1_PREFIX}/config", tags=["configuration"]
+)
+app.include_router(
+    models.router, tags=["models"]
+)  # Models router includes its own prefix
 app.include_router(websocket.router, prefix="/ws", tags=["websocket"])
 
 # Include test producer router (for development/testing)
 from app.api.routes import test_producer
-app.include_router(test_producer.router, prefix=settings.API_V1_PREFIX, tags=["testing"])
+
+app.include_router(
+    test_producer.router, prefix=settings.API_V1_PREFIX, tags=["testing"]
+)
 
 
 @app.on_event("startup")
@@ -67,7 +78,9 @@ async def startup_event():
         logger.info("Internal Kafka consumer task started")
     except Exception as e:
         logger.warning(f"Could not start internal Kafka consumer: {e}")
-        logger.warning("Internal Kafka consumer will not be available. Real-time features disabled.")
+        logger.warning(
+            "Internal Kafka consumer will not be available. Real-time features disabled."
+        )
 
     # Start external Kafka consumer in background (if enabled)
     try:
@@ -89,7 +102,7 @@ async def root():
     return {
         "message": "AI Threat Detection System API",
         "docs": "/docs",
-        "version": "1.0.0"
+        "version": "1.0.0",
     }
 
 
@@ -99,9 +112,4 @@ async def health_check():
 
 
 if __name__ == "__main__":
-    uvicorn.run(
-        "app.main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=settings.DEBUG
-    )
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=settings.DEBUG)

@@ -4,12 +4,14 @@ Model management service for storing, versioning, and activating ML models.
 import os
 import shutil
 import joblib
+import numpy as np
 from datetime import datetime
 from typing import Optional, Dict, Any, List
 from sqlalchemy.orm import Session
 
 from app.models.database import MLModel
 from app.services.model_validator import ModelValidator, ModelValidationError
+from app.services.model_profiles import get_default_profile
 
 
 class ModelManagerError(Exception):
@@ -54,7 +56,8 @@ class ModelManager:
         model_type: str,
         file_format: str,
         description: Optional[str] = None,
-        uploaded_by: Optional[str] = None
+        uploaded_by: Optional[str] = None,
+        profile_config: Optional[Dict[str, Any]] = None
     ) -> MLModel:
         """
         Save and validate a new model, storing it with version management.
@@ -67,6 +70,7 @@ class ModelManager:
             file_format: File extension ('.pkl', '.joblib', or '.h5')
             description: Optional description of the model
             uploaded_by: Optional user identifier
+            profile_config: Optional model profile with expected_features, class_labels, preprocessing_notes
 
         Returns:
             MLModel database record
@@ -74,8 +78,25 @@ class ModelManager:
         Raises:
             ModelManagerError: If validation or storage fails
         """
-        # Step 1: Validate the model
-        validation_result = self.validator.validate_model(file_path, model_type, file_format)
+        # Apply default profile if not provided
+        if profile_config is None:
+            profile_config = get_default_profile(model_type)
+        else:
+            # Merge with defaults for any missing fields
+            default_profile = get_default_profile(model_type)
+            if 'expected_features' not in profile_config or profile_config['expected_features'] is None:
+                profile_config['expected_features'] = default_profile['expected_features']
+            if 'class_labels' not in profile_config or profile_config['class_labels'] is None:
+                profile_config['class_labels'] = default_profile['class_labels']
+            if 'preprocessing_notes' not in profile_config or profile_config['preprocessing_notes'] is None:
+                profile_config['preprocessing_notes'] = default_profile['preprocessing_notes']
+        # Step 1: Validate the model with profile
+        validation_result = self.validator.validate_model(
+            file_path,
+            model_type,
+            file_format,
+            profile_config=profile_config
+        )
 
         if not validation_result['is_valid']:
             raise ModelManagerError(f"Model validation failed: {validation_result['error_message']}")
@@ -100,7 +121,11 @@ class ModelManager:
         # Step 5: Get file size
         file_size = os.path.getsize(storage_path)
 
-        # Step 6: Create database record
+        # Step 6: Sanitize JSON payloads (strip numpy types) and create database record
+        sanitized_validation = self._sanitize_json(validation_result)
+        sanitized_metadata = self._sanitize_json(validation_result.get('model_metadata'))
+        sanitized_profile = self._sanitize_json(profile_config)
+
         ml_model = MLModel(
             model_type=model_type,
             version=version,
@@ -108,11 +133,14 @@ class ModelManager:
             file_format=file_format,
             original_filename=original_filename,
             is_active=False,  # Not active by default - requires manual activation
-            model_metadata=validation_result['model_metadata'],
-            validation_results=validation_result,
+            model_metadata=sanitized_metadata,
+            validation_results=sanitized_validation,
             file_size_bytes=file_size,
             uploaded_by=uploaded_by,
-            description=description
+            description=description,
+            expected_features=sanitized_profile.get('expected_features'),
+            class_labels=sanitized_profile.get('class_labels'),
+            preprocessing_notes=sanitized_profile.get('preprocessing_notes')
         )
 
         try:
@@ -127,6 +155,20 @@ class ModelManager:
             raise ModelManagerError(f"Failed to save model to database: {str(e)}")
 
         return ml_model
+
+    def _sanitize_json(self, data: Any) -> Any:
+        """
+        Convert numpy types and other non-serializable values to native Python types.
+        """
+        if isinstance(data, dict):
+            return {k: self._sanitize_json(v) for k, v in data.items()}
+        if isinstance(data, list):
+            return [self._sanitize_json(v) for v in data]
+        if isinstance(data, tuple):
+            return tuple(self._sanitize_json(v) for v in data)
+        if isinstance(data, np.generic):
+            return data.item()
+        return data
 
     def activate_model(self, db: Session, model_id: int) -> MLModel:
         """
@@ -252,6 +294,33 @@ class ModelManager:
 
         except Exception as e:
             raise ModelManagerError(f"Failed to load model: {str(e)}")
+
+    def get_active_model_profile(self, db: Session, model_type: str) -> Dict[str, Any]:
+        """
+        Get the profile configuration for the active model.
+
+        Args:
+            db: Database session
+            model_type: Type of model ('threat_detector' or 'attack_classifier')
+
+        Returns:
+            Dictionary with expected_features, class_labels, and preprocessing_notes.
+            Returns default profile if no active model or model has no profile.
+
+        Raises:
+            ModelManagerError: If model_type is invalid
+        """
+        active_model = self.get_active_model(db, model_type)
+
+        # If no active model or no profile, return defaults
+        if active_model is None or active_model.expected_features is None:
+            return get_default_profile(model_type)
+
+        return {
+            'expected_features': active_model.expected_features,
+            'class_labels': active_model.class_labels,
+            'preprocessing_notes': active_model.preprocessing_notes
+        }
 
     def list_models(
         self,

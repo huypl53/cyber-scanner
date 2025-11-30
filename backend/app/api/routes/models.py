@@ -3,6 +3,7 @@ API routes for ML model management.
 Handles model upload, validation, versioning, and activation.
 """
 import os
+import json
 import tempfile
 from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -16,6 +17,7 @@ from app.models.schemas import (
 )
 from app.services.model_manager import ModelManager, ModelManagerError
 from app.services.model_validator import ModelValidator
+from app.services.model_profiles import validate_profile_config
 
 router = APIRouter(prefix="/api/v1/models", tags=["models"])
 
@@ -29,6 +31,7 @@ async def upload_model(
     file: UploadFile = File(..., description="Model file (.pkl, .joblib, or .h5)"),
     model_type: str = Form(..., description="Type of model: 'threat_detector' or 'attack_classifier'"),
     description: Optional[str] = Form(None, description="Optional description"),
+    profile_config: Optional[str] = Form(None, description="Optional JSON config with expected_features, class_labels, preprocessing_notes"),
     db: Session = Depends(get_db)
 ):
     """
@@ -66,6 +69,27 @@ async def upload_model(
             detail=f"Unsupported file format: {file_extension}. Supported formats: .pkl, .joblib, .h5"
         )
 
+    # Parse and validate profile_config if provided
+    parsed_profile = None
+    if profile_config:
+        try:
+            parsed_profile = json.loads(profile_config)
+            # Validate the profile configuration
+            validate_profile_config(
+                parsed_profile.get('expected_features'),
+                parsed_profile.get('class_labels')
+            )
+        except json.JSONDecodeError as e:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid JSON in profile_config: {str(e)}"
+            )
+        except ValueError as e:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid profile configuration: {str(e)}"
+            )
+
     # Save uploaded file to temporary location
     temp_file = None
     try:
@@ -83,7 +107,8 @@ async def upload_model(
             model_type=model_type,
             file_format=file_extension,
             description=description,
-            uploaded_by=None  # TODO: Add authentication and get user
+            uploaded_by=None,  # TODO: Add authentication and get user
+            profile_config=parsed_profile
         )
 
         return ml_model
@@ -265,3 +290,39 @@ def get_supported_formats():
             }
         }
     }
+
+
+@router.get("/profile/{model_type}")
+def get_active_model_profile(
+    model_type: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Get the profile configuration for the active model of a specific type.
+
+    Returns the expected features, class labels, and preprocessing notes for the active model.
+    If no active model exists or it has no profile, returns the default profile.
+
+    **Parameters:**
+    - `model_type`: Type of model ('threat_detector' or 'attack_classifier')
+
+    **Response:**
+    Returns the model profile with:
+    - `expected_features`: Ordered list of feature names
+    - `class_labels`: Ordered list of class label names
+    - `preprocessing_notes`: Optional preprocessing instructions
+    """
+    if model_type not in ['threat_detector', 'attack_classifier']:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid model_type. Must be 'threat_detector' or 'attack_classifier', got: {model_type}"
+        )
+
+    try:
+        profile = model_manager.get_active_model_profile(db, model_type)
+        return {
+            "model_type": model_type,
+            "profile": profile
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve model profile: {str(e)}")

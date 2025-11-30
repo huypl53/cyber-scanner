@@ -151,6 +151,11 @@ class MLModel(Base):
     validation_results = Column(JSON, nullable=True)  # Test prediction results
     file_size_bytes = Column(Integer, nullable=True)  # File size for storage management
 
+    # Model profile - defines expected features and class labels
+    expected_features = Column(JSON, nullable=True)  # Ordered list of feature names required by model
+    class_labels = Column(JSON, nullable=True)  # Ordered list of class labels (for classifiers)
+    preprocessing_notes = Column(Text, nullable=True)  # Optional preprocessing instructions/notes
+
     # Audit fields
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     uploaded_by = Column(String(100), nullable=True)  # For future authentication

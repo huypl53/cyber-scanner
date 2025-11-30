@@ -8,9 +8,11 @@ import {
   deactivateModel,
   deleteModel,
   getModelStorageStats,
+  getActiveModelProfile,
   MLModel,
   MLModelListResponse,
   MLModelStorageStats,
+  ModelProfile,
 } from '@/lib/api';
 
 export default function ModelsPage() {
@@ -24,6 +26,11 @@ export default function ModelsPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [modelType, setModelType] = useState<string>('threat_detector');
   const [description, setDescription] = useState<string>('');
+  const [profileConfigJson, setProfileConfigJson] = useState<string>('');
+  const [showProfileInput, setShowProfileInput] = useState(false);
+
+  // Active model profiles
+  const [activeProfiles, setActiveProfiles] = useState<Record<string, ModelProfile>>({});
 
   // UI state
   const [error, setError] = useState<string>('');
@@ -33,6 +40,7 @@ export default function ModelsPage() {
   useEffect(() => {
     loadModels();
     loadStats();
+    loadActiveProfiles();
   }, [filterType]);
 
   const loadModels = async () => {
@@ -54,6 +62,19 @@ export default function ModelsPage() {
       setStats(statsData);
     } catch (err: any) {
       console.error('Failed to load stats:', err);
+    }
+  };
+
+  const loadActiveProfiles = async () => {
+    try {
+      const threatProfile = await getActiveModelProfile('threat_detector');
+      const attackProfile = await getActiveModelProfile('attack_classifier');
+      setActiveProfiles({
+        'threat_detector': threatProfile.profile,
+        'attack_classifier': attackProfile.profile,
+      });
+    } catch (err: any) {
+      console.error('Failed to load active profiles:', err);
     }
   };
 
@@ -86,18 +107,33 @@ export default function ModelsPage() {
     setSuccess('');
 
     try {
-      const uploadedModel = await uploadModel(selectedFile, modelType, description);
+      // Parse profile config if provided
+      let profileConfig: ModelProfile | undefined = undefined;
+      if (profileConfigJson.trim()) {
+        try {
+          profileConfig = JSON.parse(profileConfigJson);
+        } catch (parseErr) {
+          setError('Invalid JSON in profile configuration');
+          setUploading(false);
+          return;
+        }
+      }
+
+      const uploadedModel = await uploadModel(selectedFile, modelType, description, profileConfig);
       setSuccess(`Model uploaded successfully! Version: ${uploadedModel.version}`);
       setSelectedFile(null);
       setDescription('');
+      setProfileConfigJson('');
+      setShowProfileInput(false);
 
       // Reset file input
       const fileInput = document.getElementById('file-input') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
 
-      // Reload models and stats
+      // Reload models, stats, and active profiles
       await loadModels();
       await loadStats();
+      await loadActiveProfiles();
     } catch (err: any) {
       setError('Upload failed: ' + (err.response?.data?.detail || err.message));
     } finally {
@@ -220,6 +256,49 @@ export default function ModelsPage() {
         </div>
       )}
 
+      {/* Active Model Profiles */}
+      {Object.keys(activeProfiles).length > 0 && (
+        <div className="bg-white shadow rounded-lg p-6 mb-8">
+          <h2 className="text-xl font-semibold mb-4">Active Model Profiles</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {Object.entries(activeProfiles).map(([modelType, profile]) => (
+              <div key={modelType} className="border rounded-lg p-4">
+                <h3 className="font-medium text-gray-900 mb-3">
+                  {modelType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                </h3>
+                {profile.expected_features && profile.expected_features.length > 0 && (
+                  <div className="mb-3">
+                    <div className="text-sm font-medium text-gray-700 mb-1">
+                      Features ({profile.expected_features.length})
+                    </div>
+                    <div className="text-xs text-gray-600 bg-gray-50 rounded p-2 max-h-32 overflow-y-auto">
+                      {profile.expected_features.slice(0, 5).join(', ')}
+                      {profile.expected_features.length > 5 && ` ... and ${profile.expected_features.length - 5} more`}
+                    </div>
+                  </div>
+                )}
+                {profile.class_labels && profile.class_labels.length > 0 && (
+                  <div className="mb-3">
+                    <div className="text-sm font-medium text-gray-700 mb-1">
+                      Classes ({profile.class_labels.length})
+                    </div>
+                    <div className="text-xs text-gray-600 bg-gray-50 rounded p-2">
+                      {profile.class_labels.join(', ')}
+                    </div>
+                  </div>
+                )}
+                {profile.preprocessing_notes && (
+                  <div>
+                    <div className="text-sm font-medium text-gray-700 mb-1">Notes</div>
+                    <div className="text-xs text-gray-600">{profile.preprocessing_notes}</div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Upload Form */}
       <div className="bg-white shadow rounded-lg p-6 mb-8">
         <h2 className="text-xl font-semibold mb-4">Upload New Model</h2>
@@ -267,6 +346,35 @@ export default function ModelsPage() {
               rows={3}
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+          </div>
+
+          <div className="border-t pt-4">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-medium text-gray-700">
+                Custom Model Profile (Optional)
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowProfileInput(!showProfileInput)}
+                className="text-sm text-blue-600 hover:text-blue-800"
+              >
+                {showProfileInput ? 'Hide' : 'Show'}
+              </button>
+            </div>
+            {showProfileInput && (
+              <div>
+                <p className="text-xs text-gray-500 mb-2">
+                  Provide custom feature list and class labels as JSON. Leave empty to use defaults.
+                </p>
+                <textarea
+                  value={profileConfigJson}
+                  onChange={(e) => setProfileConfigJson(e.target.value)}
+                  placeholder={`{\n  "expected_features": ["feature1", "feature2", ...],\n  "class_labels": ["class1", "class2", ...],\n  "preprocessing_notes": "Optional notes"\n}`}
+                  rows={6}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
+                />
+              </div>
+            )}
           </div>
 
           <button
