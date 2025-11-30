@@ -81,83 +81,50 @@ async def upload_csv(
 
         traffic_ids = [record.id for record in traffic_data_records]
 
-        # Run threat detection
-        threat_predictions = threat_detector.predict_batch(
-            features_list,
-            db,
-            traffic_ids
-        )
-
         # Build response
         predictions_response: List[CompletePredictionResponse] = []
 
-        # If attack classification features are available, run classification for attacks
+        # Run appropriate model based on detected type
         if model_type == "attack_classification":
-            # Only classify detected attacks
-            attack_indices = [
-                i for i, pred in enumerate(threat_predictions)
-                if pred.is_attack
-            ]
+            # For attack classification, run attack classifier directly
+            attack_predictions = attack_classifier.predict_batch(
+                features_list,
+                db,
+                traffic_ids
+            )
 
-            if attack_indices:
-                attack_features = [features_list[i] for i in attack_indices]
-                attack_traffic_ids = [traffic_ids[i] for i in attack_indices]
+            # Log self-healing actions
+            self_healing_actions = self_healing.log_action_batch(
+                attack_predictions,
+                db
+            )
 
-                # Run attack classification
-                attack_predictions = attack_classifier.predict_batch(
-                    attack_features,
-                    db,
-                    attack_traffic_ids
-                )
+            # Build response map
+            action_map = {
+                action.attack_prediction_id: action
+                for action in self_healing_actions
+            }
 
-                # Log self-healing actions
-                self_healing_actions = self_healing.log_action_batch(
-                    attack_predictions,
-                    db
-                )
+            for traffic_record, attack_pred in zip(traffic_data_records, attack_predictions):
+                action = action_map.get(attack_pred.id) if attack_pred else None
 
-                # Build response with all predictions
-                attack_pred_map = {
-                    pred.traffic_data_id: pred
-                    for pred in attack_predictions
-                }
-                action_map = {
-                    action.attack_prediction_id: action
-                    for action in self_healing_actions
-                }
-
-                for i, (traffic_record, threat_pred) in enumerate(
-                    zip(traffic_data_records, threat_predictions)
-                ):
-                    attack_pred = attack_pred_map.get(traffic_record.id)
-                    action = action_map.get(attack_pred.id) if attack_pred else None
-
-                    predictions_response.append(
-                        CompletePredictionResponse(
-                            traffic_data=traffic_record,
-                            threat_prediction=threat_pred,
-                            attack_prediction=attack_pred,
-                            self_healing_action=action
-                        )
+                predictions_response.append(
+                    CompletePredictionResponse(
+                        traffic_data=traffic_record,
+                        threat_prediction=None,
+                        attack_prediction=attack_pred,
+                        self_healing_action=action
                     )
-            else:
-                # No attacks detected
-                for traffic_record, threat_pred in zip(
-                    traffic_data_records, threat_predictions
-                ):
-                    predictions_response.append(
-                        CompletePredictionResponse(
-                            traffic_data=traffic_record,
-                            threat_prediction=threat_pred,
-                            attack_prediction=None,
-                            self_healing_action=None
-                        )
-                    )
+                )
         else:
-            # Only threat detection available
-            for traffic_record, threat_pred in zip(
-                traffic_data_records, threat_predictions
-            ):
+            # Run threat detection for 10-feature model
+            threat_predictions = threat_detector.predict_batch(
+                features_list,
+                db,
+                traffic_ids
+            )
+            # Build response for threat detection only
+            for traffic_record, threat_pred in zip(traffic_data_records, threat_predictions):
                 predictions_response.append(
                     CompletePredictionResponse(
                         traffic_data=traffic_record,
