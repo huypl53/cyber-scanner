@@ -147,13 +147,17 @@ export default function CSVUploader() {
               <div className="bg-white p-3 rounded">
                 <p className="text-sm text-gray-600">Attacks Detected</p>
                 <p className="text-2xl font-bold text-red-600">
-                  {result.predictions.filter((p: any) => p.threat_prediction.is_attack).length}
+                  {result.predictions.filter((p: any) =>
+                    p.threat_prediction?.is_attack || p.attack_prediction
+                  ).length}
                 </p>
               </div>
               <div className="bg-white p-3 rounded">
                 <p className="text-sm text-gray-600">Normal Traffic</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {result.predictions.filter((p: any) => !p.threat_prediction.is_attack).length}
+                  {result.predictions.filter((p: any) =>
+                    p.threat_prediction && !p.threat_prediction.is_attack && !p.attack_prediction
+                  ).length}
                 </p>
               </div>
             </div>
