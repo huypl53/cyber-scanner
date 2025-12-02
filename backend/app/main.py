@@ -2,12 +2,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.api.routes import upload, predictions, websocket, config, models
+from app.api.routes import upload, predictions, websocket, config, models, health
 from app.kafka.consumer import start_consumer_loop
 from app.kafka.external_consumer import start_external_consumer_loop
 import uvicorn
 import asyncio
 import logging
+import subprocess
+import os
 
 # Configure logging
 logging.basicConfig(
@@ -32,21 +34,20 @@ app = FastAPI(
     debug=settings.DEBUG,
 )
 
-# Configure CORS (allow wildcard when configured)
+# Configure CORS
+# Note: allow_credentials=True cannot be used with allow_origins=["*"]
+# Instead, we use allow_origin_regex to match all origins while supporting credentials
 cors_kwargs = {
-    "allow_credentials": True,
+    "allow_credentials": False,  # Disabled to allow wildcard origins
     "allow_methods": ["*"],
     "allow_headers": ["*"],
+    "allow_origins": ["*"],  # Allow all origins for development
 }
-cors_kwargs.update({"allow_origins": ["*"], "allow_origin_regex": ".*"})
-# if "*" in settings.BACKEND_CORS_ORIGINS:
-#     cors_kwargs.update({"allow_origins": ["*"], "allow_origin_regex": ".*"})
-# else:
-#     cors_kwargs.update({"allow_origins": settings.BACKEND_CORS_ORIGINS})
 
 app.add_middleware(CORSMiddleware, **cors_kwargs)
 
 # Include routers
+app.include_router(health.router, tags=["health"])  # Health check (no prefix for /health)
 app.include_router(upload.router, prefix=settings.API_V1_PREFIX, tags=["upload"])
 app.include_router(
     predictions.router, prefix=settings.API_V1_PREFIX, tags=["predictions"]
@@ -67,28 +68,77 @@ app.include_router(
 )
 
 
+def run_migrations():
+    """Run Alembic migrations on startup."""
+    try:
+        # Get the backend directory (parent of app)
+        backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        alembic_ini = os.path.join(backend_dir, "alembic.ini")
+
+        if not os.path.exists(alembic_ini):
+            logger.warning(f"Alembic config not found at {alembic_ini}, skipping migrations")
+            return
+
+        logger.info("Checking for pending database migrations...")
+
+        # Check current revision
+        current_result = subprocess.run(
+            ["alembic", "current"],
+            cwd=backend_dir,
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+
+        # Run migrations
+        upgrade_result = subprocess.run(
+            ["alembic", "upgrade", "head"],
+            cwd=backend_dir,
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+
+        if upgrade_result.returncode == 0:
+            logger.info("Database migrations applied successfully")
+            if upgrade_result.stdout:
+                logger.info(f"Migration output: {upgrade_result.stdout}")
+        else:
+            logger.error(f"Migration failed: {upgrade_result.stderr}")
+
+    except subprocess.TimeoutExpired:
+        logger.error("Migration command timed out")
+    except FileNotFoundError:
+        logger.warning("Alembic command not found. Install with: pip install alembic")
+    except Exception as e:
+        logger.error(f"Error running migrations: {e}")
+
+
 @app.on_event("startup")
 async def startup_event():
     """Start background tasks on application startup."""
     logger.info("Starting AI Threat Detection System...")
 
+    # Run database migrations
+    try:
+        run_migrations()
+    except Exception as e:
+        logger.error(f"Migration error (continuing anyway): {e}")
+
     # Start internal Kafka consumer in background
     try:
         asyncio.create_task(start_consumer_loop())
-        logger.info("Internal Kafka consumer task started")
+        logger.info("Internal Kafka consumer task created (will connect with retry)")
     except Exception as e:
-        logger.warning(f"Could not start internal Kafka consumer: {e}")
-        logger.warning(
-            "Internal Kafka consumer will not be available. Real-time features disabled."
-        )
+        logger.warning(f"Could not create Kafka consumer task: {e}")
+        logger.warning("API will function without real-time Kafka streaming")
 
     # Start external Kafka consumer in background (if enabled)
     try:
         asyncio.create_task(start_external_consumer_loop())
-        logger.info("External Kafka consumer task started")
+        logger.info("External Kafka consumer task created (will connect with retry)")
     except Exception as e:
-        logger.warning(f"Could not start external Kafka consumer: {e}")
-        logger.warning("External Kafka consumer will not be available.")
+        logger.warning(f"Could not create external Kafka consumer task: {e}")
 
 
 @app.on_event("shutdown")
@@ -104,11 +154,6 @@ async def root():
         "docs": "/docs",
         "version": "1.0.0",
     }
-
-
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy"}
 
 
 if __name__ == "__main__":

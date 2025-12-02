@@ -12,10 +12,11 @@ class DataPreprocessor:
     """Handles preprocessing for both threat detection and attack classification models."""
 
     # Features required by ensemble model (10 features)
+    # Updated to match actual trained model features
     THREAT_DETECTION_FEATURES = [
-        'service', 'flag', 'src_bytes', 'dst_bytes', 'count',
-        'same_srv_rate', 'diff_srv_rate', 'dst_host_srv_count',
-        'dst_host_same_srv_rate', 'dst_host_same_src_port_rate'
+        'flag', 'src_bytes', 'dst_bytes', 'count', 'diff_srv_rate',
+        'dst_host_srv_count', 'dst_host_same_srv_rate', 'dst_host_diff_srv_rate',
+        'dst_host_same_src_port_rate', 'dst_host_srv_diff_host_rate'
     ]
 
     # Features required by decision tree model (42 features)

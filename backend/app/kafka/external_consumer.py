@@ -33,6 +33,9 @@ class ExternalKafkaConsumerService:
             "group.id": settings.KAFKA_EXTERNAL_CONSUMER_GROUP,
             "auto.offset.reset": "latest",
             "enable.auto.commit": True,
+            "socket.timeout.ms": 10000,  # 10 second timeout for network operations
+            "session.timeout.ms": 10000,  # 10 second session timeout
+            "api.version.request.timeout.ms": 5000,  # 5 second API version request timeout
         }
         self.consumer = None
         self.preprocessor = DataPreprocessor()
@@ -50,33 +53,52 @@ class ExternalKafkaConsumerService:
         Returns:
             bool: True if enabled, False otherwise
         """
-        db = SessionLocal()
         try:
-            config_service = ConfigService(db)
-            return config_service.is_source_enabled("external_kafka")
+            db = SessionLocal()
+            try:
+                config_service = ConfigService(db)
+                return config_service.is_source_enabled("external_kafka")
+            finally:
+                db.close()
         except Exception as e:
-            logger.error(f"Error checking if external Kafka is enabled: {e}")
+            logger.warning(f"Error checking if external Kafka is enabled (DB may not be ready): {e}")
+            # Default to disabled if we can't check
             return False
-        finally:
-            db.close()
 
-    def start(self):
-        """Start the external Kafka consumer if enabled."""
-        if not self.is_enabled():
-            logger.info("External Kafka consumer is disabled. Skipping startup.")
-            return
-
+    def _create_consumer_sync(self):
+        """Synchronous consumer creation (to be run in thread pool)."""
         try:
-            self.consumer = Consumer(self.consumer_config)
-            self.consumer.subscribe([settings.KAFKA_TOPIC_EXTERNAL_DATA])
-            self.running = True
+            consumer = Consumer(self.consumer_config)
+            consumer.subscribe([settings.KAFKA_TOPIC_EXTERNAL_DATA])
             logger.info(
                 f"External Kafka consumer started. Subscribed to topic: "
                 f"{settings.KAFKA_TOPIC_EXTERNAL_DATA}"
             )
+            return consumer
+        except Exception as e:
+            logger.error(f"Failed to create external Kafka consumer: {e}")
+            raise
+
+    async def start(self):
+        """Start the external Kafka consumer if enabled."""
+        if not self.is_enabled():
+            logger.info("External Kafka consumer is disabled. Skipping startup.")
+            self.running = False
+            return
+
+        try:
+            loop = asyncio.get_event_loop()
+            # Run blocking Consumer() creation in thread pool
+            self.consumer = await loop.run_in_executor(self.executor, self._create_consumer_sync)
+            self.running = True
         except KafkaException as e:
             logger.error(f"Failed to start external Kafka consumer: {e}")
-            raise
+            logger.error("External Kafka consumer will retry connection during message consumption")
+            # Don't raise - allow graceful degradation
+            self.running = False
+        except Exception as e:
+            logger.error(f"Unexpected error starting external Kafka consumer: {e}")
+            self.running = False
 
     def stop(self):
         """Stop the external Kafka consumer."""
@@ -151,43 +173,68 @@ class ExternalKafkaConsumerService:
         """
         Consume messages from external Kafka topic and process them.
         Only processes messages from whitelisted IPs.
+        Includes retry logic with exponential backoff.
         """
-        if not self.consumer:
-            raise RuntimeError("Consumer not started. Call start() first.")
+        retry_delay = 5  # Start with 5 second delay
+        max_retry_delay = 60  # Max 60 seconds between retries
 
-        logger.info("Starting external message consumption...")
+        while True:  # Outer retry loop
+            try:
+                # If consumer not initialized, try to start it
+                if not self.consumer or not self.running:
+                    logger.info("Attempting to start external Kafka consumer...")
+                    await self.start()
 
-        try:
-            loop = asyncio.get_event_loop()
+                    # If start() failed (sets running=False) or disabled, wait and retry
+                    if not self.running:
+                        if not self.is_enabled():
+                            logger.info("External Kafka consumer is disabled. Will check again later.")
+                        else:
+                            logger.warning(f"External Kafka consumer start failed. Retrying in {retry_delay}s...")
+                        await asyncio.sleep(retry_delay)
+                        retry_delay = min(retry_delay * 2, max_retry_delay)
+                        continue
 
-            while self.running:
-                # Check if still enabled (can be disabled at runtime)
-                if not self.is_enabled():
-                    logger.info("External Kafka consumer disabled. Stopping consumption.")
-                    break
+                    # Success! Reset retry delay
+                    retry_delay = 5
 
-                # Run the blocking poll() call in a thread pool executor
-                msg = await loop.run_in_executor(self.executor, self.consumer.poll, 1.0)
+                logger.info("Starting external message consumption...")
+                loop = asyncio.get_event_loop()
 
-                if msg is None:
-                    continue
+                while self.running:
+                    # Check if still enabled (can be disabled at runtime)
+                    if not self.is_enabled():
+                        logger.info("External Kafka consumer disabled. Stopping consumption.")
+                        break
 
-                if msg.error():
-                    if msg.error().code() == KafkaError._PARTITION_EOF:
-                        logger.info(f"Reached end of partition: {msg.partition()}")
-                    else:
-                        logger.error(f"Kafka error: {msg.error()}")
-                    continue
+                    # Run the blocking poll() call in a thread pool executor
+                    msg = await loop.run_in_executor(self.executor, self.consumer.poll, 1.0)
 
-                # Process the message
-                await self.process_message(msg)
+                    if msg is None:
+                        continue
 
-        except KeyboardInterrupt:
-            logger.info("External consumer interrupted by user")
-        except Exception as e:
-            logger.error(f"Error in external consumer loop: {e}")
-        finally:
-            self.stop()
+                    if msg.error():
+                        if msg.error().code() == KafkaError._PARTITION_EOF:
+                            logger.info(f"Reached end of partition: {msg.partition()}")
+                        else:
+                            logger.error(f"Kafka error: {msg.error()}")
+                        continue
+
+                    # Process the message
+                    await self.process_message(msg)
+
+            except KeyboardInterrupt:
+                logger.info("External consumer interrupted by user")
+                break
+            except Exception as e:
+                logger.error(f"Error in external consumer loop: {e}")
+                logger.warning(f"Will retry in {retry_delay}s...")
+                self.stop()
+                await asyncio.sleep(retry_delay)
+                retry_delay = min(retry_delay * 2, max_retry_delay)
+
+        # Final cleanup
+        self.stop()
 
     async def process_message(self, msg: Message):
         """
@@ -350,10 +397,5 @@ def get_external_consumer_service() -> ExternalKafkaConsumerService:
 async def start_external_consumer_loop():
     """Start the external Kafka consumer loop. Should be run as a background task."""
     consumer = get_external_consumer_service()
-    consumer.start()
-
-    # Only consume if enabled
-    if consumer.is_enabled():
-        await consumer.consume_messages()
-    else:
-        logger.info("External Kafka consumer not started (disabled in config)")
+    # consume_messages() handles start() and is_enabled() checks internally with retry logic
+    await consumer.consume_messages()

@@ -345,8 +345,3 @@ def reload_models():
     _ensemble_model = None
     _decision_tree_model = None
     logger.info("Model instances reset. Will reload on next access.")
-
-
-# Backward compatibility aliases
-EnsembleModel = RealEnsembleModel
-DecisionTreeModel = RealDecisionTreeModel
