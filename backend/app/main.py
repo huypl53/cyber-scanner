@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import engine, Base
 from app.api.routes import upload, predictions, websocket, config, models, health
-from app.kafka.consumer import start_consumer_loop
+from app.kafka.consumer_aiokafka import start_consumer_loop
 from app.kafka.external_consumer import start_external_consumer_loop
 import uvicorn
 import asyncio
@@ -125,10 +125,10 @@ async def startup_event():
     except Exception as e:
         logger.error(f"Migration error (continuing anyway): {e}")
 
-    # Start internal Kafka consumer in background
+    # Start internal Kafka consumer in background (using aiokafka - async native)
     try:
         asyncio.create_task(start_consumer_loop())
-        logger.info("Internal Kafka consumer task created (will connect with retry)")
+        logger.info("Internal Kafka consumer task created (aiokafka)")
     except Exception as e:
         logger.warning(f"Could not create Kafka consumer task: {e}")
         logger.warning("API will function without real-time Kafka streaming")

@@ -234,12 +234,13 @@ class DataPreprocessor:
         """Validate that threat detection features are in expected ranges."""
         # Rate features should be between 0 and 1
         rate_features = [
-            'same_srv_rate', 'diff_srv_rate',
-            'dst_host_same_srv_rate', 'dst_host_same_src_port_rate'
+            'diff_srv_rate',
+            'dst_host_same_srv_rate', 'dst_host_same_src_port_rate',
+            'dst_host_diff_srv_rate', 'dst_host_srv_diff_host_rate'
         ]
 
         for feature in rate_features:
-            if not (0 <= features[feature] <= 1):
+            if feature in features and not (0 <= features[feature] <= 1):
                 raise ValueError(
                     f"Feature '{feature}' must be between 0 and 1, "
                     f"got {features[feature]}"
