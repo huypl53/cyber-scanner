@@ -2,12 +2,33 @@
 
 import { useState } from 'react';
 import { uploadCSV } from '@/lib/api';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
+import {
+  Upload,
+  File,
+  FileCheck,
+  AlertTriangle,
+  Shield,
+  CheckCircle2,
+  X,
+  Loader2,
+  PieChart,
+} from 'lucide-react';
+
+type UploadStep = 'parsing' | 'normalizing' | 'analyzing' | 'classifying' | 'complete';
 
 export default function CSVUploader() {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [currentStep, setCurrentStep] = useState<UploadStep | null>(null);
+  const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
