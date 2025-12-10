@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   LayoutDashboard,
   Activity,
@@ -18,40 +19,41 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 interface NavItem {
-  title: string;
+  titleKey: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  badge?: string;
+  badgeKey?: string;
   badgeVariant?: 'default' | 'destructive' | 'outline' | 'secondary';
 }
 
 const navItems: NavItem[] = [
   {
-    title: 'Dashboard',
+    titleKey: 'dashboard',
     href: '/dashboard',
     icon: LayoutDashboard,
   },
   {
-    title: 'Real-time Monitor',
+    titleKey: 'realtime',
     href: '/realtime',
     icon: Activity,
-    badge: 'LIVE',
+    badgeKey: 'liveBadge',
     badgeVariant: 'destructive',
   },
   {
-    title: 'Upload & Analyze',
+    titleKey: 'upload',
     href: '/',
     icon: Upload,
   },
   {
-    title: 'Model Management',
+    titleKey: 'models',
     href: '/models',
     icon: Database,
   },
   {
-    title: 'Settings',
+    titleKey: 'settings',
     href: '/settings',
     icon: Settings,
   },
@@ -60,6 +62,7 @@ const navItems: NavItem[] = [
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
+  const t = useTranslations('sidebar');
 
   return (
     <div
@@ -75,10 +78,10 @@ export function Sidebar() {
             <Shield className="h-8 w-8 text-primary animate-pulse-glow" />
             <div className="flex flex-col">
               <span className="text-lg font-bold text-gradient-cyan">
-                AI Shield
+                {t('brand')}
               </span>
               <span className="text-xs text-muted-foreground">
-                Threat Detection
+                {t('subtitle')}
               </span>
             </div>
           </Link>
@@ -113,14 +116,14 @@ export function Sidebar() {
                   )}
                 />
                 {!collapsed && (
-                  <span className="flex-1 text-left">{item.title}</span>
+                  <span className="flex-1 text-left">{t(item.titleKey)}</span>
                 )}
-                {!collapsed && item.badge && (
+                {!collapsed && item.badgeKey && (
                   <Badge
                     variant={item.badgeVariant || 'default'}
                     className="ml-auto text-[10px] px-1.5 py-0 animate-pulse"
                   >
-                    {item.badge}
+                    {t(item.badgeKey)}
                   </Badge>
                 )}
               </Button>
@@ -135,14 +138,14 @@ export function Sidebar() {
           <Separator />
           <div className="p-4 space-y-2">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">System Status</span>
+              <span className="text-muted-foreground">{t('systemStatus')}</span>
               <div className="flex items-center space-x-1">
                 <div className="h-2 w-2 rounded-full bg-status-safe animate-pulse-glow" />
-                <span className="text-status-safe font-medium">Online</span>
+                <span className="text-status-safe font-medium">{t('online')}</span>
               </div>
             </div>
             <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Active Threats</span>
+              <span className="text-muted-foreground">{t('activeThreats')}</span>
               <span className="font-mono font-bold text-destructive">0</span>
             </div>
           </div>
@@ -167,11 +170,16 @@ export function Sidebar() {
       {!collapsed && (
         <>
           <Separator />
-          <div className="p-3">
+          <div className="p-3 space-y-2">
+            {/* Language Switcher */}
+            <div className="flex justify-center">
+              <LanguageSwitcher />
+            </div>
+
             <div className="flex items-center space-x-2 rounded-lg bg-muted/50 p-2">
               <AlertCircle className="h-4 w-4 text-muted-foreground" />
               <div className="flex-1 text-xs text-muted-foreground">
-                <p className="font-medium">POC Version</p>
+                <p className="font-medium">{t('pocVersion')}</p>
                 <p className="text-[10px]">v1.0.0</p>
               </div>
             </div>

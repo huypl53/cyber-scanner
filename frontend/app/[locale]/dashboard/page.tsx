@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import { getPredictionStats, PredictionStats } from '@/lib/api';
 import { StatCard } from '@/components/StatCard';
 import { ThreatTable } from '@/components/ThreatTable';
@@ -20,6 +21,7 @@ import {
 } from 'lucide-react';
 
 export default function DashboardPage() {
+  const t = useTranslations('dashboard');
   const [stats, setStats] = useState<PredictionStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -92,7 +94,7 @@ export default function DashboardPage() {
     return (
       <div className="flex flex-col justify-center items-center h-[60vh] space-y-4">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="text-lg text-muted-foreground">Loading threat intelligence...</p>
+        <p className="text-lg text-muted-foreground">{t('loading')}</p>
       </div>
     );
   }
@@ -104,12 +106,12 @@ export default function DashboardPage() {
           <div className="flex items-center gap-3">
             <AlertTriangle className="h-8 w-8 text-destructive" />
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-destructive">Connection Error</h3>
+              <h3 className="text-lg font-semibold text-destructive">{t('error.title')}</h3>
               <p className="text-muted-foreground">{error}</p>
             </div>
             <Button onClick={() => loadStats()} variant="destructive">
               <RefreshCw className="h-4 w-4 mr-2" />
-              Retry
+              {t('error.retry')}
             </Button>
           </div>
         </CardContent>
@@ -122,13 +124,13 @@ export default function DashboardPage() {
       <Card className="shadow-glow">
         <CardContent className="p-12 text-center">
           <Shield className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-xl font-semibold mb-2">No Data Available</h3>
+          <h3 className="text-xl font-semibold mb-2">{t('noData.title')}</h3>
           <p className="text-muted-foreground mb-4">
-            Upload network traffic data to begin threat analysis.
+            {t('noData.description')}
           </p>
           <Button variant="default">
             <TrendingUp className="h-4 w-4 mr-2" />
-            Upload Data
+            {t('noData.uploadButton')}
           </Button>
         </CardContent>
       </Card>
@@ -147,12 +149,12 @@ export default function DashboardPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gradient-cyan">
-            Threat Intelligence Dashboard
+            {t('title')}
           </h1>
           <p className="text-muted-foreground mt-1 flex items-center gap-2">
-            Real-time network security monitoring and threat analysis
+            {t('subtitle')}
             <Badge variant="outline" className="animate-pulse">
-              Live
+              {t('liveBadge')}
             </Badge>
           </p>
         </div>
@@ -166,14 +168,14 @@ export default function DashboardPage() {
           ) : (
             <RefreshCw className="h-4 w-4 mr-2" />
           )}
-          {refreshing ? 'Refreshing...' : 'Refresh'}
+          {refreshing ? t('refreshing') : t('refresh')}
         </Button>
       </div>
 
       {/* KPI Cards with Sparklines */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="Total Predictions"
+          title={t('stats.totalPredictions')}
           value={stats.total_predictions.toLocaleString()}
           trend={5.2}
           sparklineData={generateSparkline(stats.total_predictions / 12, stats.total_predictions * 0.1)}
@@ -181,16 +183,16 @@ export default function DashboardPage() {
           variant="default"
         />
         <StatCard
-          title="Attacks Detected"
+          title={t('stats.attacksDetected')}
           value={stats.total_attacks.toLocaleString()}
           trend={-2.3}
           sparklineData={generateSparkline(stats.total_attacks / 12, stats.total_attacks * 0.15)}
           icon={AlertTriangle}
           variant="threat"
-          badge="Critical"
+          badge={t('stats.criticalBadge')}
         />
         <StatCard
-          title="Normal Traffic"
+          title={t('stats.normalTraffic')}
           value={stats.total_normal.toLocaleString()}
           trend={3.1}
           sparklineData={generateSparkline(stats.total_normal / 12, stats.total_normal * 0.1)}
@@ -198,7 +200,7 @@ export default function DashboardPage() {
           variant="success"
         />
         <StatCard
-          title="Attack Rate"
+          title={t('stats.attackRate')}
           value={`${stats.attack_rate.toFixed(1)}%`}
           trend={stats.attack_rate > 50 ? 12.5 : -8.2}
           sparklineData={generateSparkline(stats.attack_rate, 10)}

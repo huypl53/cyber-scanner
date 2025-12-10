@@ -333,14 +333,14 @@ For development mode:
 
 ```bash
 docker-compose -f docker-compose.dev.yml down -v
-docker-compose -f docker-compose.dev.yml up -d
+docker-compose -f docker-compose.dev.yml up -d --build --force-recreate
 ```
 
 For full stack:
 
 ```bash
 docker-compose -f docker-compose.full.yml down -v
-docker-compose -f docker-compose.full.yml up -d
+docker-compose -f docker-compose.full.yml up -d --build --force-recreate
 ```
 
 ### Database connection issues

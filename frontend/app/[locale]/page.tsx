@@ -1,36 +1,33 @@
+import { useTranslations } from 'next-intl';
 import CSVUploaderEnhanced from '@/components/CSVUploaderEnhanced';
 import { Card, CardContent } from '@/components/ui/card';
-import { Shield, Target, Zap, Database, TrendingUp, Lock } from 'lucide-react';
+import { Shield, Target, Zap, Database, Lock } from 'lucide-react';
 
 export default function Home() {
+  const t = useTranslations('home');
+
   const features = [
     {
       icon: Shield,
-      title: 'Binary Threat Detection',
-      description: 'Advanced ensemble model (ANN + LSTM) identifies attacks vs normal traffic with high accuracy',
+      titleKey: 'features.binaryThreat.title',
+      descriptionKey: 'features.binaryThreat.description',
       color: 'text-primary',
       bg: 'bg-primary/10',
     },
     {
       icon: Target,
-      title: 'Multi-Class Classification',
-      description: '14 attack types including DDoS, Port Scan, Brute Force, and more for granular threat analysis',
+      titleKey: 'features.multiClass.title',
+      descriptionKey: 'features.multiClass.description',
       color: 'text-destructive',
       bg: 'bg-destructive/10',
     },
     {
       icon: Zap,
-      title: 'Self-Healing Actions',
-      description: 'Automated response recommendations: service restarts, IP blocking, and admin alerts',
+      titleKey: 'features.selfHealing.title',
+      descriptionKey: 'features.selfHealing.description',
       color: 'text-status-warning',
       bg: 'bg-amber-500/10',
     },
-  ];
-
-  const capabilities = [
-    { label: 'Real-time Analysis', value: '< 100ms latency' },
-    { label: 'Supported Protocols', value: 'TCP, UDP, HTTP, ICMP' },
-    { label: 'Detection Accuracy', value: '99.2%' },
   ];
 
   return (
@@ -38,10 +35,10 @@ export default function Home() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-gradient-cyan mb-2">
-          Network Traffic Analysis
+          {t('title')}
         </h1>
         <p className="text-muted-foreground">
-          Upload CSV files containing network traffic data for AI-powered threat detection and attack classification
+          {t('subtitle')}
         </p>
       </div>
 
@@ -54,7 +51,7 @@ export default function Home() {
           const Icon = feature.icon;
           return (
             <Card
-              key={feature.title}
+              key={feature.titleKey}
               className="shadow-glow hover:scale-105 transition-transform duration-300"
             >
               <CardContent className="p-6">
@@ -63,9 +60,9 @@ export default function Home() {
                 >
                   <Icon className={`h-6 w-6 ${feature.color}`} />
                 </div>
-                <h3 className="font-semibold text-lg mb-2">{feature.title}</h3>
+                <h3 className="font-semibold text-lg mb-2">{t(feature.titleKey)}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  {feature.description}
+                  {t(feature.descriptionKey)}
                 </p>
               </CardContent>
             </Card>
@@ -78,15 +75,21 @@ export default function Home() {
         <CardContent className="p-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <Database className="h-5 w-5 text-primary" />
-            System Capabilities
+            {t('capabilities.title')}
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {capabilities.map((cap) => (
-              <div key={cap.label} className="text-center">
-                <p className="text-sm text-muted-foreground mb-1">{cap.label}</p>
-                <p className="text-2xl font-bold text-primary">{cap.value}</p>
-              </div>
-            ))}
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground mb-1">{t('capabilities.realtimeAnalysis')}</p>
+              <p className="text-2xl font-bold text-primary">{t('capabilities.realtimeValue')}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground mb-1">{t('capabilities.protocols')}</p>
+              <p className="text-2xl font-bold text-primary">{t('capabilities.protocolsValue')}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground mb-1">{t('capabilities.accuracy')}</p>
+              <p className="text-2xl font-bold text-primary">{t('capabilities.accuracyValue')}</p>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -98,10 +101,9 @@ export default function Home() {
             <Lock className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h4 className="font-semibold mb-1">Data Privacy & Security</h4>
+            <h4 className="font-semibold mb-1">{t('security.title')}</h4>
             <p className="text-sm text-muted-foreground">
-              All uploaded data is processed securely and deleted after analysis.
-              No sensitive information is stored permanently.
+              {t('security.description')}
             </p>
           </div>
         </CardContent>

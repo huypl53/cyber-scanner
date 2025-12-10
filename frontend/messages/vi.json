@@ -1,0 +1,92 @@
+{
+  "app": {
+    "title": "AI Shield - Hệ Thống Phát Hiện Mối Đe Dọa",
+    "description": "Hệ thống AI phát hiện mối đe dọa mạng thời gian thực và tự phục hồi"
+  },
+  "sidebar": {
+    "brand": "AI Shield",
+    "subtitle": "Phát Hiện Mối Đe Dọa",
+    "dashboard": "Bảng Điều Khiển",
+    "realtime": "Giám Sát Thời Gian Thực",
+    "upload": "Tải Lên & Phân Tích",
+    "models": "Quản Lý Mô Hình",
+    "settings": "Cài Đặt",
+    "systemStatus": "Trạng Thái Hệ Thống",
+    "online": "Trực Tuyến",
+    "activeThreats": "Mối Đe Dọa Đang Hoạt Động",
+    "pocVersion": "Phiên Bản POC",
+    "liveBadge": "TRỰC TIẾP"
+  },
+  "home": {
+    "title": "Phân Tích Lưu Lượng Mạng",
+    "subtitle": "Tải lên file CSV chứa dữ liệu lưu lượng mạng để phát hiện mối đe dọa và phân loại tấn công bằng AI",
+    "features": {
+      "binaryThreat": {
+        "title": "Phát Hiện Mối Đe Dọa Nhị Phân",
+        "description": "Mô hình tổng hợp tiên tiến (ANN + LSTM) xác định các cuộc tấn công so với lưu lượng bình thường với độ chính xác cao"
+      },
+      "multiClass": {
+        "title": "Phân Loại Đa Lớp",
+        "description": "14 loại tấn công bao gồm DDoS, Quét Cổng, Tấn công Brute Force và nhiều hơn nữa để phân tích mối đe dọa chi tiết"
+      },
+      "selfHealing": {
+        "title": "Hành Động Tự Phục Hồi",
+        "description": "Khuyến nghị phản hồi tự động: khởi động lại dịch vụ, chặn IP và cảnh báo quản trị viên"
+      }
+    },
+    "capabilities": {
+      "title": "Khả Năng Hệ Thống",
+      "realtimeAnalysis": "Phân Tích Thời Gian Thực",
+      "realtimeValue": "< 100ms độ trễ",
+      "protocols": "Giao Thức Được Hỗ Trợ",
+      "protocolsValue": "TCP, UDP, HTTP, ICMP",
+      "accuracy": "Độ Chính Xác Phát Hiện",
+      "accuracyValue": "99.2%"
+    },
+    "security": {
+      "title": "Bảo Mật & Quyền Riêng Tư Dữ Liệu",
+      "description": "Tất cả dữ liệu được tải lên đều được xử lý an toàn và xóa sau khi phân tích. Không có thông tin nhạy cảm nào được lưu trữ vĩnh viễn."
+    }
+  },
+  "dashboard": {
+    "title": "Bảng Điều Khiển Tình Báo Mối Đe Dọa",
+    "subtitle": "Giám sát an ninh mạng và phân tích mối đe dọa thời gian thực",
+    "liveBadge": "Trực Tiếp",
+    "refresh": "Làm Mới",
+    "refreshing": "Đang làm mới...",
+    "loading": "Đang tải tình báo mối đe dọa...",
+    "error": {
+      "title": "Lỗi Kết Nối",
+      "retry": "Thử Lại"
+    },
+    "noData": {
+      "title": "Không Có Dữ Liệu",
+      "description": "Tải lên dữ liệu lưu lượng mạng để bắt đầu phân tích mối đe dọa.",
+      "uploadButton": "Tải Lên Dữ Liệu"
+    },
+    "stats": {
+      "totalPredictions": "Tổng Số Dự Đoán",
+      "attacksDetected": "Tấn Công Được Phát Hiện",
+      "normalTraffic": "Lưu Lượng Bình Thường",
+      "attackRate": "Tỷ Lệ Tấn Công",
+      "criticalBadge": "Nghiêm Trọng"
+    }
+  },
+  "common": {
+    "loading": "Đang tải...",
+    "error": "Lỗi",
+    "success": "Thành công",
+    "cancel": "Hủy",
+    "save": "Lưu",
+    "delete": "Xóa",
+    "edit": "Sửa",
+    "close": "Đóng",
+    "back": "Quay lại",
+    "next": "Tiếp theo",
+    "previous": "Trước đó",
+    "search": "Tìm kiếm",
+    "filter": "Lọc",
+    "export": "Xuất",
+    "import": "Nhập"
+  }
+}

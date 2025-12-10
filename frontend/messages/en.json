@@ -1,0 +1,92 @@
+{
+  "app": {
+    "title": "AI Shield - Threat Detection System",
+    "description": "Real-time network threat detection and self-healing AI system"
+  },
+  "sidebar": {
+    "brand": "AI Shield",
+    "subtitle": "Threat Detection",
+    "dashboard": "Dashboard",
+    "realtime": "Real-time Monitor",
+    "upload": "Upload & Analyze",
+    "models": "Model Management",
+    "settings": "Settings",
+    "systemStatus": "System Status",
+    "online": "Online",
+    "activeThreats": "Active Threats",
+    "pocVersion": "POC Version",
+    "liveBadge": "LIVE"
+  },
+  "home": {
+    "title": "Network Traffic Analysis",
+    "subtitle": "Upload CSV files containing network traffic data for AI-powered threat detection and attack classification",
+    "features": {
+      "binaryThreat": {
+        "title": "Binary Threat Detection",
+        "description": "Advanced ensemble model (ANN + LSTM) identifies attacks vs normal traffic with high accuracy"
+      },
+      "multiClass": {
+        "title": "Multi-Class Classification",
+        "description": "14 attack types including DDoS, Port Scan, Brute Force, and more for granular threat analysis"
+      },
+      "selfHealing": {
+        "title": "Self-Healing Actions",
+        "description": "Automated response recommendations: service restarts, IP blocking, and admin alerts"
+      }
+    },
+    "capabilities": {
+      "title": "System Capabilities",
+      "realtimeAnalysis": "Real-time Analysis",
+      "realtimeValue": "< 100ms latency",
+      "protocols": "Supported Protocols",
+      "protocolsValue": "TCP, UDP, HTTP, ICMP",
+      "accuracy": "Detection Accuracy",
+      "accuracyValue": "99.2%"
+    },
+    "security": {
+      "title": "Data Privacy & Security",
+      "description": "All uploaded data is processed securely and deleted after analysis. No sensitive information is stored permanently."
+    }
+  },
+  "dashboard": {
+    "title": "Threat Intelligence Dashboard",
+    "subtitle": "Real-time network security monitoring and threat analysis",
+    "liveBadge": "Live",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing...",
+    "loading": "Loading threat intelligence...",
+    "error": {
+      "title": "Connection Error",
+      "retry": "Retry"
+    },
+    "noData": {
+      "title": "No Data Available",
+      "description": "Upload network traffic data to begin threat analysis.",
+      "uploadButton": "Upload Data"
+    },
+    "stats": {
+      "totalPredictions": "Total Predictions",
+      "attacksDetected": "Attacks Detected",
+      "normalTraffic": "Normal Traffic",
+      "attackRate": "Attack Rate",
+      "criticalBadge": "Critical"
+    }
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export",
+    "import": "Import"
+  }
+}
