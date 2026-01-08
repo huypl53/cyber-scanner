@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations, useLocale } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -23,6 +24,8 @@ interface TerminalLogProps {
 }
 
 export function TerminalLog({ entries, maxHeight = '600px' }: TerminalLogProps) {
+  const t = useTranslations('realtime.feed');
+  const locale = useLocale();
   const logEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -58,13 +61,13 @@ export function TerminalLog({ entries, maxHeight = '600px' }: TerminalLogProps) 
   const getTypeBadge = (type: string) => {
     switch (type) {
       case 'attack':
-        return 'THREAT';
+        return t('badge.threat');
       case 'normal':
-        return 'NORMAL';
+        return t('badge.normal');
       case 'action':
-        return 'ACTION';
+        return t('badge.action');
       default:
-        return 'SYSTEM';
+        return t('badge.system');
     }
   };
 
@@ -74,11 +77,11 @@ export function TerminalLog({ entries, maxHeight = '600px' }: TerminalLogProps) 
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-bold flex items-center gap-2">
             <Terminal className="h-5 w-5 text-primary animate-pulse-glow" />
-            <span className="font-mono">Live Traffic Feed</span>
+            <span className="font-mono">{t('title')}</span>
           </CardTitle>
           <Badge variant="outline" className="animate-pulse">
             <div className="h-2 w-2 rounded-full bg-status-safe mr-2 animate-pulse-glow" />
-            Streaming
+            {t('streaming')}
           </Badge>
         </div>
       </CardHeader>
@@ -90,9 +93,9 @@ export function TerminalLog({ entries, maxHeight = '600px' }: TerminalLogProps) 
           {entries.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
               <Terminal className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="font-mono">Waiting for traffic data...</p>
+              <p className="font-mono">{t('waitingForData')}</p>
               <p className="text-[10px] mt-2 opacity-70">
-                // Start test stream to generate sample traffic
+                {t('startStreamHint')}
               </p>
             </div>
           ) : (
@@ -107,7 +110,7 @@ export function TerminalLog({ entries, maxHeight = '600px' }: TerminalLogProps) 
                 >
                   <div className="flex items-start gap-2">
                     <span className="text-muted-foreground opacity-70">
-                      [{new Date(entry.timestamp).toLocaleTimeString('en-US', {
+                      [{new Date(entry.timestamp).toLocaleTimeString(locale, {
                         hour12: false,
                         hour: '2-digit',
                         minute: '2-digit',
@@ -130,7 +133,7 @@ export function TerminalLog({ entries, maxHeight = '600px' }: TerminalLogProps) 
                     <div className="mt-1 ml-32 text-[10px] text-muted-foreground space-y-0.5">
                       {entry.metadata.score !== undefined && (
                         <div>
-                          <span className="text-primary">score:</span>{' '}
+                          <span className="text-primary">{t('metadata.score')}:</span>{' '}
                           <span className="text-terminal-accent">
                             {entry.metadata.score.toFixed(4)}
                           </span>
@@ -138,7 +141,7 @@ export function TerminalLog({ entries, maxHeight = '600px' }: TerminalLogProps) 
                       )}
                       {entry.metadata.attackType && (
                         <div>
-                          <span className="text-primary">type:</span>{' '}
+                          <span className="text-primary">{t('metadata.type')}:</span>{' '}
                           <span className="text-terminal-error">
                             {entry.metadata.attackType}
                           </span>
@@ -146,7 +149,7 @@ export function TerminalLog({ entries, maxHeight = '600px' }: TerminalLogProps) 
                       )}
                       {entry.metadata.confidence !== undefined && (
                         <div>
-                          <span className="text-primary">confidence:</span>{' '}
+                          <span className="text-primary">{t('metadata.confidence')}:</span>{' '}
                           <span className="text-terminal-success">
                             {(entry.metadata.confidence * 100).toFixed(1)}%
                           </span>

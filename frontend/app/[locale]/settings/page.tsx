@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import {
   getDataSources,
   updateDataSource,
@@ -13,6 +14,8 @@ import {
 } from '@/lib/api';
 
 export default function SettingsPage() {
+  const t = useTranslations('settings');
+  const locale = useLocale();
   // Data source state
   const [sources, setSources] = useState<DataSourceConfig[]>([]);
   const [loadingSources, setLoadingSources] = useState(true);
@@ -45,7 +48,7 @@ export default function SettingsPage() {
       setWhitelist(whitelistData);
     } catch (error) {
       console.error('Error loading settings:', error);
-      setFormError('Failed to load settings');
+      setFormError(t('ipWhitelist.errors.loadFailed'));
     } finally {
       setLoadingSources(false);
       setLoadingWhitelist(false);
@@ -55,12 +58,13 @@ export default function SettingsPage() {
   const handleToggleSource = async (sourceName: string, currentStatus: boolean) => {
     try {
       await updateDataSource(sourceName, { is_enabled: !currentStatus });
-      setSuccessMessage(`${sourceName} ${!currentStatus ? 'enabled' : 'disabled'} successfully`);
+      const status = !currentStatus ? 'enabled' : 'disabled';
+      setSuccessMessage(t('dataSources.toggleSuccess', { source: sourceName, status }));
       setTimeout(() => setSuccessMessage(''), 3000);
       await loadSettings();
     } catch (error) {
       console.error('Error toggling source:', error);
-      setFormError(`Failed to toggle ${sourceName}`);
+      setFormError(t('dataSources.toggleError', { source: sourceName }));
       setTimeout(() => setFormError(''), 3000);
     }
   };
@@ -85,12 +89,12 @@ export default function SettingsPage() {
     setSuccessMessage('');
 
     if (!newIP.trim()) {
-      setFormError('IP address is required');
+      setFormError(t('ipWhitelist.errors.ipRequired'));
       return;
     }
 
     if (!validateIP(newIP)) {
-      setFormError('Invalid IP address format (must be IPv4, e.g., 192.168.1.100)');
+      setFormError(t('ipWhitelist.errors.invalidIP'));
       return;
     }
 
@@ -101,31 +105,31 @@ export default function SettingsPage() {
         is_active: true,
       });
 
-      setSuccessMessage(`IP ${newIP} added to whitelist`);
+      setSuccessMessage(t('ipWhitelist.success.added', { ip: newIP }));
       setNewIP('');
       setNewIPDescription('');
       setTimeout(() => setSuccessMessage(''), 3000);
       await loadSettings();
     } catch (error: any) {
       console.error('Error adding IP:', error);
-      setFormError(error.response?.data?.detail || 'Failed to add IP to whitelist');
+      setFormError(error.response?.data?.detail || t('ipWhitelist.errors.addFailed'));
       setTimeout(() => setFormError(''), 5000);
     }
   };
 
   const handleDeleteIP = async (ipId: number, ipAddress: string) => {
-    if (!confirm(`Are you sure you want to remove ${ipAddress} from the whitelist?`)) {
+    if (!confirm(t('ipWhitelist.confirmDelete', { ip: ipAddress }))) {
       return;
     }
 
     try {
       await deleteIP(ipId);
-      setSuccessMessage(`IP ${ipAddress} removed from whitelist`);
+      setSuccessMessage(t('ipWhitelist.success.removed', { ip: ipAddress }));
       setTimeout(() => setSuccessMessage(''), 3000);
       await loadSettings();
     } catch (error) {
       console.error('Error deleting IP:', error);
-      setFormError('Failed to delete IP from whitelist');
+      setFormError(t('ipWhitelist.errors.deleteFailed'));
       setTimeout(() => setFormError(''), 3000);
     }
   };
@@ -133,199 +137,193 @@ export default function SettingsPage() {
   const handleToggleIPStatus = async (ipId: number, currentStatus: boolean) => {
     try {
       await updateWhitelistEntry(ipId, { is_active: !currentStatus });
-      setSuccessMessage('IP status updated');
+      setSuccessMessage(t('ipWhitelist.success.statusUpdated'));
       setTimeout(() => setSuccessMessage(''), 3000);
       await loadSettings();
     } catch (error) {
       console.error('Error updating IP status:', error);
-      setFormError('Failed to update IP status');
+      setFormError(t('ipWhitelist.errors.updateFailed'));
       setTimeout(() => setFormError(''), 3000);
     }
   };
 
   const getSourceDisplayName = (sourceName: string): string => {
-    const names: Record<string, string> = {
-      packet_capture: 'Packet Capture',
-      external_kafka: 'External Kafka Stream',
-      internal_kafka: 'Internal Kafka Stream',
-    };
-    return names[sourceName] || sourceName;
+    return t(`dataSources.sources.${sourceName}`) as string;
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-4xl font-bold text-gray-900 mb-8">Settings</h1>
-
-        {/* Success/Error Messages */}
-        {successMessage && (
-          <div className="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
-            {successMessage}
-          </div>
-        )}
-        {formError && (
-          <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-            {formError}
-          </div>
-        )}
-
-        {/* Data Sources Section */}
-        <section className="mb-12">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-4">Data Sources</h2>
-          <p className="text-gray-600 mb-4">
-            Enable or disable data collection sources. Multiple sources can run simultaneously.
-          </p>
-
-          {loadingSources ? (
-            <div className="bg-white rounded-lg shadow p-6">
-              <p className="text-gray-500">Loading data sources...</p>
-            </div>
-          ) : (
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              {sources.map((source) => (
-                <div
-                  key={source.source_name}
-                  className="flex items-center justify-between p-6 border-b last:border-b-0 hover:bg-gray-50 transition"
-                >
-                  <div className="flex-1">
-                    <h3 className="text-lg font-medium text-gray-900">
-                      {getSourceDisplayName(source.source_name)}
-                    </h3>
-                    <p className="text-sm text-gray-600 mt-1">{source.description}</p>
-                    {source.config_params && (
-                      <div className="mt-2 text-xs text-gray-500">
-                        <code className="bg-gray-100 px-2 py-1 rounded">
-                          {JSON.stringify(source.config_params)}
-                        </code>
-                      </div>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => handleToggleSource(source.source_name, source.is_enabled)}
-                    className={`ml-6 px-6 py-3 rounded-lg font-medium transition-colors ${
-                      source.is_enabled
-                        ? 'bg-green-500 text-white hover:bg-green-600'
-                        : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
-                    }`}
-                  >
-                    {source.is_enabled ? 'Enabled' : 'Disabled'}
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* IP Whitelist Section */}
-        <section>
-          <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-            IP Whitelist (External Data Providers)
-          </h2>
-          <p className="text-gray-600 mb-4">
-            Manage IP addresses allowed to send data via the external Kafka stream. Only
-            whitelisted IPs can send traffic data for analysis.
-          </p>
-
-          {/* Add IP Form */}
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Add New IP Address</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <input
-                type="text"
-                placeholder="IP Address (e.g., 192.168.1.100)"
-                value={newIP}
-                onChange={(e) => setNewIP(e.target.value)}
-                className="border border-gray-300 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                type="text"
-                placeholder="Description (optional)"
-                value={newIPDescription}
-                onChange={(e) => setNewIPDescription(e.target.value)}
-                className="border border-gray-300 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <button
-                onClick={handleAddIP}
-                className="bg-blue-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-600 transition-colors"
-              >
-                Add IP
-              </button>
-            </div>
-          </div>
-
-          {/* IP Whitelist Table */}
-          {loadingWhitelist ? (
-            <div className="bg-white rounded-lg shadow p-6">
-              <p className="text-gray-500">Loading whitelist...</p>
-            </div>
-          ) : whitelist.length === 0 ? (
-            <div className="bg-white rounded-lg shadow p-6 text-center">
-              <p className="text-gray-500">No whitelisted IPs yet. Add one above to get started.</p>
-            </div>
-          ) : (
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-gray-100 border-b">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      IP Address
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Description
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Created At
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {whitelist.map((entry) => (
-                    <tr key={entry.id} className="hover:bg-gray-50 transition">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <code className="text-sm font-mono text-gray-900">{entry.ip_address}</code>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm text-gray-700">
-                          {entry.description || <span className="text-gray-400">-</span>}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <button
-                          onClick={() => handleToggleIPStatus(entry.id, entry.is_active)}
-                          className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            entry.is_active
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}
-                        >
-                          {entry.is_active ? 'Active' : 'Inactive'}
-                        </button>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                        {new Date(entry.created_at).toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <button
-                          onClick={() => handleDeleteIP(entry.id, entry.ip_address)}
-                          className="text-red-600 hover:text-red-800 font-medium"
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
+    <div className="space-y-6 animate-fade-in">
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-gradient-cyan mb-8">{t('title')}</h1>
       </div>
+
+      {/* Success/Error Messages */}
+      {successMessage && (
+        <div className="mb-6 p-4 bg-status-safe/10 border border-status-safe/30 text-status-safe rounded">
+          {successMessage}
+        </div>
+      )}
+      {formError && (
+        <div className="mb-6 p-4 bg-destructive/10 border border-destructive/30 text-destructive rounded">
+          {formError}
+        </div>
+      )}
+
+      {/* Data Sources Section */}
+      <section className="mb-12">
+        <h2 className="text-2xl font-semibold text-card-foreground mb-4">{t('dataSources.title')}</h2>
+        <p className="text-muted-foreground mb-4">
+          {t('dataSources.description')}
+        </p>
+
+        {loadingSources ? (
+          <div className="bg-card shadow-glow border border-border rounded-lg p-6">
+            <p className="text-muted-foreground">{t('dataSources.loading')}</p>
+          </div>
+        ) : (
+          <div className="bg-card shadow-glow border border-border rounded-lg overflow-hidden">
+            {sources.map((source) => (
+              <div
+                key={source.source_name}
+                className="flex items-center justify-between p-6 border-b border-border last:border-b-0 hover:bg-muted/20 transition"
+              >
+                <div className="flex-1">
+                  <h3 className="text-lg font-medium text-card-foreground">
+                    {getSourceDisplayName(source.source_name)}
+                  </h3>
+                  <p className="text-sm text-muted-foreground mt-1">{source.description}</p>
+                  {source.config_params && (
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      <code className="bg-muted/50 px-2 py-1 rounded">
+                        {JSON.stringify(source.config_params)}
+                      </code>
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => handleToggleSource(source.source_name, source.is_enabled)}
+                  className={`ml-6 px-6 py-3 rounded-lg font-medium transition-colors ${
+                    source.is_enabled
+                      ? 'bg-status-safe text-white hover:bg-status-safe/90'
+                      : 'bg-muted text-muted-foreground hover:bg-muted/70'
+                  }`}
+                >
+                  {source.is_enabled ? t('dataSources.enabled') : t('dataSources.disabled')}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* IP Whitelist Section */}
+      <section>
+        <h2 className="text-2xl font-semibold text-card-foreground mb-4">
+          {t('ipWhitelist.title')}
+        </h2>
+        <p className="text-muted-foreground mb-4">
+          {t('ipWhitelist.description')}
+        </p>
+
+        {/* Add IP Form */}
+        <div className="bg-card shadow-glow border border-border rounded-lg p-6 mb-6">
+          <h3 className="text-lg font-medium text-card-foreground mb-4">{t('ipWhitelist.addNew')}</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <input
+              type="text"
+              placeholder={t('ipWhitelist.ipPlaceholder')}
+              value={newIP}
+              onChange={(e) => setNewIP(e.target.value)}
+              className="border border-border px-4 py-3 rounded-lg bg-background text-card-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+            <input
+              type="text"
+              placeholder={t('ipWhitelist.descriptionPlaceholder')}
+              value={newIPDescription}
+              onChange={(e) => setNewIPDescription(e.target.value)}
+              className="border border-border px-4 py-3 rounded-lg bg-background text-card-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+            <button
+              onClick={handleAddIP}
+              className="bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors"
+            >
+              {t('ipWhitelist.addButton')}
+            </button>
+          </div>
+        </div>
+
+        {/* IP Whitelist Table */}
+        {loadingWhitelist ? (
+          <div className="bg-card shadow-glow border border-border rounded-lg p-6">
+            <p className="text-muted-foreground">{t('ipWhitelist.loading')}</p>
+          </div>
+        ) : whitelist.length === 0 ? (
+          <div className="bg-card shadow-glow border border-border rounded-lg p-6 text-center">
+            <p className="text-muted-foreground">{t('ipWhitelist.noWhitelist')}</p>
+          </div>
+        ) : (
+          <div className="bg-card shadow-glow border border-border rounded-lg overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-muted/50 border-b border-border">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    {t('ipWhitelist.table.ipAddress')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    {t('ipWhitelist.table.description')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    {t('ipWhitelist.table.status')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    {t('ipWhitelist.table.createdAt')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    {t('ipWhitelist.table.actions')}
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {whitelist.map((entry) => (
+                  <tr key={entry.id} className="hover:bg-muted/10 transition">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <code className="text-sm font-mono text-card-foreground">{entry.ip_address}</code>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm text-card-foreground">
+                        {entry.description || <span className="text-muted-foreground">-</span>}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <button
+                        onClick={() => handleToggleIPStatus(entry.id, entry.is_active)}
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          entry.is_active
+                            ? 'bg-status-safe/20 text-status-safe'
+                            : 'bg-destructive/20 text-destructive'
+                        }`}
+                      >
+                        {entry.is_active ? t('ipWhitelist.table.active') : t('ipWhitelist.table.inactive')}
+                      </button>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-card-foreground">
+                      {new Date(entry.created_at).toLocaleString(locale)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <button
+                        onClick={() => handleDeleteIP(entry.id, entry.ip_address)}
+                        className="text-destructive hover:text-destructive/80 font-medium"
+                      >
+                        {t('ipWhitelist.table.delete')}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

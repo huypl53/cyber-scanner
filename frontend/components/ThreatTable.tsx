@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations, useLocale } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -28,11 +29,27 @@ interface ThreatTableProps {
 }
 
 export function ThreatTable({ threats }: ThreatTableProps) {
+  const t = useTranslations('dashboard.threats');
+  const locale = useLocale();
+
   const getSeverityBadge = (score: number) => {
-    if (score >= 0.9) return { label: 'CRITICAL', variant: 'destructive' as const, icon: AlertTriangle };
-    if (score >= 0.7) return { label: 'HIGH', variant: 'destructive' as const, icon: AlertTriangle };
-    if (score >= 0.5) return { label: 'MEDIUM', variant: 'outline' as const, icon: Shield };
-    return { label: 'LOW', variant: 'secondary' as const, icon: Shield };
+    if (score >= 0.9) return { label: t('severity.critical'), variant: 'destructive' as const, icon: AlertTriangle };
+    if (score >= 0.7) return { label: t('severity.high'), variant: 'destructive' as const, icon: AlertTriangle };
+    if (score >= 0.5) return { label: t('severity.medium'), variant: 'outline' as const, icon: Shield };
+    return { label: t('severity.low'), variant: 'secondary' as const, icon: Shield };
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'active':
+        return t('status.active');
+      case 'mitigated':
+        return t('status.mitigated');
+      case 'investigating':
+        return t('status.investigating');
+      default:
+        return status;
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -54,10 +71,10 @@ export function ThreatTable({ threats }: ThreatTableProps) {
         <div className="flex items-center justify-between">
           <CardTitle className="text-xl font-bold text-gradient-cyan flex items-center gap-2">
             <AlertTriangle className="h-5 w-5" />
-            Recent Threats
+            {t('title')}
           </CardTitle>
           <Badge variant="destructive" className="animate-pulse">
-            {threats.length} Active
+            {threats.length} {t('active')}
           </Badge>
         </div>
       </CardHeader>
@@ -67,25 +84,25 @@ export function ThreatTable({ threats }: ThreatTableProps) {
             <thead className="bg-muted/50 border-b border-border">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">
-                  Severity
+                  {t('table.severity')}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">
-                  Timestamp
+                  {t('table.timestamp')}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">
-                  Source IP
+                  {t('table.sourceIp')}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">
-                  Attack Type
+                  {t('table.attackType')}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">
-                  Confidence
+                  {t('table.confidence')}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">
-                  Status
+                  {t('table.status')}
                 </th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground uppercase">
-                  Actions
+                  {t('table.actions')}
                 </th>
               </tr>
             </thead>
@@ -107,7 +124,7 @@ export function ThreatTable({ threats }: ThreatTableProps) {
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-sm font-mono">
-                        {new Date(threat.timestamp).toLocaleString('en-US', {
+                        {new Date(threat.timestamp).toLocaleString(locale, {
                           month: 'short',
                           day: 'numeric',
                           hour: '2-digit',
@@ -153,7 +170,7 @@ export function ThreatTable({ threats }: ThreatTableProps) {
                           getStatusColor(threat.status)
                         )}
                       >
-                        {threat.status}
+                        {getStatusLabel(threat.status)}
                       </span>
                     </td>
                     <td className="px-4 py-3">
@@ -162,7 +179,7 @@ export function ThreatTable({ threats }: ThreatTableProps) {
                           size="sm"
                           variant="ghost"
                           className="h-8 w-8 p-0"
-                          title="Investigate"
+                          title={t('actions.investigate')}
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -170,7 +187,7 @@ export function ThreatTable({ threats }: ThreatTableProps) {
                           size="sm"
                           variant="ghost"
                           className="h-8 w-8 p-0"
-                          title="Block IP"
+                          title={t('actions.blockIp')}
                         >
                           <Ban className="h-4 w-4" />
                         </Button>
@@ -178,7 +195,7 @@ export function ThreatTable({ threats }: ThreatTableProps) {
                           size="sm"
                           variant="ghost"
                           className="h-8 w-8 p-0"
-                          title="View Details"
+                          title={t('actions.viewDetails')}
                         >
                           <ChevronRight className="h-4 w-4" />
                         </Button>

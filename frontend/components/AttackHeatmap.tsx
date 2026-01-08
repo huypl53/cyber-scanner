@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useMemo } from 'react';
 import { Flame } from 'lucide-react';
@@ -13,7 +14,8 @@ interface AttackHeatmapProps {
 }
 
 export function AttackHeatmap({ data }: AttackHeatmapProps) {
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const t = useTranslations('dashboard.heatmap');
+  const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
   const hours = Array.from({ length: 24 }, (_, i) => i);
 
   const maxCount = useMemo(() => {
@@ -39,7 +41,7 @@ export function AttackHeatmap({ data }: AttackHeatmapProps) {
       <CardHeader className="border-b border-border">
         <CardTitle className="text-xl font-bold flex items-center gap-2">
           <Flame className="h-5 w-5 text-primary" />
-          Attack Patterns <span className="text-muted-foreground text-sm font-normal">(by time)</span>
+          {t('title')} <span className="text-muted-foreground text-sm font-normal">({t('subtitle')})</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="p-6">
@@ -63,7 +65,7 @@ export function AttackHeatmap({ data }: AttackHeatmapProps) {
           {days.map((day) => (
             <div key={day} className="flex items-center">
               <div className="w-12 text-xs font-medium text-muted-foreground">
-                {day}
+                {t(`days.${day}`)}
               </div>
               <div className="flex-1 grid grid-cols-24 gap-1">
                 {hours.map((hour) => {
@@ -74,11 +76,11 @@ export function AttackHeatmap({ data }: AttackHeatmapProps) {
                       className={`h-6 rounded-sm transition-all duration-200 hover:scale-110 hover:z-10 relative group ${getHeatColor(
                         count
                       )}`}
-                      title={`${day} ${hour}:00 - ${count} attacks`}
+                      title={`${day} ${hour}:00 - ${count} ${t('attacks')}`}
                     >
                       {/* Tooltip on hover */}
                       <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
-                        {count} attacks
+                        {count} {t('attacks')}
                       </div>
                     </div>
                   );
@@ -90,7 +92,7 @@ export function AttackHeatmap({ data }: AttackHeatmapProps) {
 
         {/* Legend */}
         <div className="mt-6 flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">Less activity</span>
+          <span className="text-muted-foreground">{t('lessActivity')}</span>
           <div className="flex gap-1">
             {[0, 0.2, 0.4, 0.6, 0.8, 1].map((intensity, i) => (
               <div
@@ -99,7 +101,7 @@ export function AttackHeatmap({ data }: AttackHeatmapProps) {
               />
             ))}
           </div>
-          <span className="text-muted-foreground">More activity</span>
+          <span className="text-muted-foreground">{t('moreActivity')}</span>
         </div>
       </CardContent>
     </Card>

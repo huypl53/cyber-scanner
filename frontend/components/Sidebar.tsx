@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import {
   LayoutDashboard,
   Activity,
@@ -62,6 +62,7 @@ const navItems: NavItem[] = [
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
+  const locale = useLocale();
   const t = useTranslations('sidebar');
 
   return (
@@ -74,7 +75,7 @@ export function Sidebar() {
       {/* Logo/Brand */}
       <div className="flex h-16 items-center justify-between px-4 border-b border-border">
         {!collapsed && (
-          <Link href="/dashboard" className="flex items-center space-x-2">
+          <Link href={`/${locale}/dashboard`} className="flex items-center space-x-2">
             <Shield className="h-8 w-8 text-primary animate-pulse-glow" />
             <div className="flex flex-col">
               <span className="text-lg font-bold text-gradient-cyan">
@@ -95,10 +96,11 @@ export function Sidebar() {
       <nav className="flex-1 space-y-1 px-2 py-4 overflow-y-auto">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href;
+          const localizedHref = `/${locale}${item.href}`;
+          const isActive = pathname === localizedHref;
 
           return (
-            <Link key={item.href} href={item.href}>
+            <Link key={item.href} href={localizedHref}>
               <Button
                 variant={isActive ? 'secondary' : 'ghost'}
                 className={cn(
@@ -167,25 +169,28 @@ export function Sidebar() {
       </Button>
 
       {/* Footer */}
-      {!collapsed && (
-        <>
-          <Separator />
-          <div className="p-3 space-y-2">
-            {/* Language Switcher */}
-            <div className="flex justify-center">
-              <LanguageSwitcher />
-            </div>
+      <Separator />
+      <div className="p-3 space-y-2">
+        {/* Language Switcher - visible in both collapsed and expanded states */}
+        <div className={cn('flex', collapsed ? 'justify-center' : 'justify-center')}>
+          <LanguageSwitcher
+            compact={collapsed}
+            showTooltip={collapsed}
+            className={collapsed ? '' : ''}
+          />
+        </div>
 
-            <div className="flex items-center space-x-2 rounded-lg bg-muted/50 p-2">
-              <AlertCircle className="h-4 w-4 text-muted-foreground" />
-              <div className="flex-1 text-xs text-muted-foreground">
-                <p className="font-medium">{t('pocVersion')}</p>
-                <p className="text-[10px]">v1.0.0</p>
-              </div>
+        {/* POC Version - only show when expanded */}
+        {!collapsed && (
+          <div className="flex items-center space-x-2 rounded-lg bg-muted/50 p-2">
+            <AlertCircle className="h-4 w-4 text-muted-foreground" />
+            <div className="flex-1 text-xs text-muted-foreground">
+              <p className="font-medium">{t('pocVersion')}</p>
+              <p className="text-[10px]">v1.0.0</p>
             </div>
           </div>
-        </>
-      )}
+        )}
+      </div>
     </div>
   );
 }

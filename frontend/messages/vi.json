@@ -3,6 +3,20 @@
     "title": "AI Shield - Hệ Thống Phát Hiện Mối Đe Dọa",
     "description": "Hệ thống AI phát hiện mối đe dọa mạng thời gian thực và tự phục hồi"
   },
+  "languageSwitcher": {
+    "switch": "Đổi ngôn ngữ",
+    "changeLanguage": "Thay đổi ngôn ngữ",
+    "selectLanguage": "Chọn ngôn ngữ",
+    "current": "hiện tại"
+  },
+  "header": {
+    "default": "AI Shield",
+    "home": "Phân Tích Lưu Lượng Mạng",
+    "dashboard": "Bảng Điều Khiển Tình Báo Mối Đe Dọa",
+    "realtime": "Giám Sát Thời Gian Thực",
+    "models": "Quản Lý Mô Hình",
+    "settings": "Cài Đặt"
+  },
   "sidebar": {
     "brand": "AI Shield",
     "subtitle": "Phát Hiện Mối Đe Dọa",
@@ -70,6 +84,224 @@
       "normalTraffic": "Lưu Lượng Bình Thường",
       "attackRate": "Tỷ Lệ Tấn Công",
       "criticalBadge": "Nghiêm Trọng"
+    },
+    "chart": {
+      "title": "Điểm Phát Hiện Mối Đe Dọa",
+      "predictionNumber": "Dự Đoán #",
+      "score": "Điểm",
+      "threatScore": "Điểm Mối Đe Dọa",
+      "threshold": "Ngưỡng (0.5)"
+    },
+    "heatmap": {
+      "title": "Mô Hình Tấn Công",
+      "subtitle": "theo thời gian",
+      "lessActivity": "Ít hoạt động hơn",
+      "moreActivity": "Nhiều hoạt động hơn",
+      "attacks": "cuộc tấn công",
+      "days": {
+        "mon": "T2",
+        "tue": "T3",
+        "wed": "T4",
+        "thu": "T5",
+        "fri": "T6",
+        "sat": "T7",
+        "sun": "CN"
+      }
+    },
+    "threats": {
+      "title": "Mối Đe Dọa Gần Đây",
+      "active": "Hoạt Động",
+      "table": {
+        "severity": "Mức Độ",
+        "timestamp": "Thời Gian",
+        "sourceIp": "IP Nguồn",
+        "attackType": "Loại Tấn Công",
+        "confidence": "Độ Tin Cậy",
+        "status": "Trạng Thái",
+        "actions": "Hành Động"
+      },
+      "actions": {
+        "investigate": "Điều Tra",
+        "blockIp": "Chặn IP",
+        "viewDetails": "Xem Chi Tiết"
+      },
+      "severity": {
+        "critical": "NGHIÊM TRỌNG",
+        "high": "CAO",
+        "medium": "TRUNG BÌNH",
+        "low": "THẤP"
+      },
+      "status": {
+        "active": "HOẠT ĐỘNG",
+        "mitigated": "ĐÃ GIẢM THỦ",
+        "investigating": "ĐANG ĐIỀU TRA"
+      }
+    }
+  },
+  "realtime": {
+    "title": "Giám Sát Mối Đe Dọa Thời Gian Thực",
+    "subtitle": "Phân tích lưu lượng mạng trực tiếp và phát hiện mối đe dọa",
+    "connected": "Đã Kết Nối",
+    "disconnected": "Đã Ngắt Kết Nối",
+    "startTestStream": "Bắt Đầu Luồng Kiểm Thử",
+    "streamActive": "Đang Phát Luồng...",
+    "stats": {
+      "eventsReceived": "Sự Kiện Nhận Được",
+      "threatsDetected": "Mối Đe Dọa Được Phát Hiện",
+      "normalTraffic": "Lưu Lượng Bình Thường",
+      "avgThreatScore": "Điểm Mối Đe Dọa TB"
+    },
+    "throughput": {
+      "title": "Thông Lượng Lưu Lượng",
+      "subtitle": "sự kiện/giây",
+      "waitingForData": "Đang chờ dữ liệu lưu lượng...",
+      "threatTraffic": "Lưu Lượng Mối Đe Dọa",
+      "normalTraffic": "Lưu Lượng Bình Thường"
+    },
+    "feed": {
+      "title": "Nguồn Lưu Lượng Trực Tiếp",
+      "streaming": "Đang Phát",
+      "waitingForData": "Đang chờ dữ liệu lưu lượng...",
+      "startStreamHint": "// Bắt đầu luồng kiểm thử để tạo lưu lượng mẫu",
+      "badge": {
+        "threat": "Mối Đe Dọa",
+        "normal": "Bình Thường",
+        "action": "Hành Động",
+        "system": "Hệ Thống"
+      },
+      "metadata": {
+        "score": "điểm",
+        "type": "loại",
+        "confidence": "độ tin cậy"
+      }
+    }
+  },
+  "models": {
+    "title": "Quản Lý Mô Hình",
+    "subtitle": "Tải lên, quản lý và kích hoạt các mô hình ML để phát hiện mối đe dọa và phân loại tấn công",
+    "stats": {
+      "title": "Thống Kê Lưu Trữ",
+      "totalModels": "Tổng Số Mô Hình",
+      "totalSize": "Tổng Dung Lượng",
+      "threatDetector": "Bộ Phát Hiện Mối Đe Dọa",
+      "attackClassifier": "Bộ Phân Loại Tấn Công",
+      "activeModels": "Mô Hình Đang Kích Hoạt:"
+    },
+    "profiles": {
+      "title": "Hồ Sơ Mô Hình Đang Kích Hoạt",
+      "features": "Tính Năng",
+      "classes": "Lớp",
+      "notes": "Ghi Chú"
+    },
+    "upload": {
+      "title": "Tải Lên Mô Hình Mới",
+      "modelType": "Loại Mô Hình",
+      "threatDetectorOption": "Bộ Phát Hiện Mối Đe Dọa (10 tính năng)",
+      "attackClassifierOption": "Bộ Phân Loại Tấn Công (42 tính năng)",
+      "fileLabel": "Tệp Mô Hình (.pkl, .joblib, hoặc .h5)",
+      "descriptionLabel": "Mô Tả (Tùy Chọn)",
+      "descriptionPlaceholder": "vd: Mô hình LSTM được huấn luyện trên tập dữ liệu NSL-KDD",
+      "customProfile": "Hồ Sơ Mô Hình Tùy Chỉnh (Tùy Chọn)",
+      "show": "Hiện",
+      "hide": "Ẩn",
+      "profileHint": "Cung cấp danh sách tính năng và nhãn lớp tùy chỉnh dưới dạng JSON. Để trống để sử dụng mặc định.",
+      "selected": "Đã Chọn",
+      "uploadButton": "Tải Lên Mô Hình",
+      "uploading": "Đang tải lên...",
+      "errors": {
+        "invalidFormat": "Định dạng tệp không hợp lệ. Định dạng được hỗ trợ: .pkl, .joblib, .h5",
+        "selectFile": "Vui lòng chọn một tệp",
+        "invalidJson": "JSON không hợp lệ trong cấu hình hồ sơ"
+      }
+    },
+    "list": {
+      "title": "Mô Hình Đã Tải Lên",
+      "filterAll": "Tất Cả Mô Hình",
+      "filterThreatDetector": "Bộ Phát Hiện Mối Đe Dọa",
+      "filterAttackClassifier": "Bộ Phân Loại Tấn Công",
+      "loading": "Đang tải mô hình...",
+      "noModels": "Chưa có mô hình nào được tải lên",
+      "table": {
+        "type": "Loại",
+        "version": "Phiên Bản",
+        "filename": "Tên Tệp",
+        "status": "Trạng Thái",
+        "size": "Kích Thước",
+        "uploaded": "Đã Tải Lên",
+        "actions": "Hành Động",
+        "active": "Đang Kích Hoạt",
+        "inactive": "Không Kích Hoạt"
+      },
+      "actions": {
+        "activate": "Kích Hoạt",
+        "deactivate": "Ngưng Kích Hoạt",
+        "delete": "Xóa"
+      },
+      "confirmDelete": "Bạn có chắc chắn muốn xóa mô hình này? Hành động này không thể hoàn tác."
+    },
+    "success": {
+      "uploaded": "Mô hình đã được tải lên thành công! Phiên bản: {version}",
+      "activated": "Mô hình đã được kích hoạt thành công",
+      "deactivated": "Mô hình đã bị ngưng kích hoạt thành công",
+      "deleted": "Mô hình đã được xóa thành công"
+    },
+    "errors": {
+      "loadFailed": "Không thể tải mô hình: {error}",
+      "uploadFailed": "Tải lên thất bại: {error}",
+      "activationFailed": "Kích hoạt thất bại: {error}",
+      "deactivationFailed": "Ngưng kích hoạt thất bại: {error}",
+      "deletionFailed": "Xóa thất bại: {error}"
+    }
+  },
+  "settings": {
+    "title": "Cài Đặt",
+    "dataSources": {
+      "title": "Nguồn Dữ Liệu",
+      "description": "Bật hoặc tắt các nguồn thu thập dữ liệu. Nhiều nguồn có thể chạy đồng thời.",
+      "loading": "Đang tải nguồn dữ liệu...",
+      "sources": {
+        "packet_capture": "Bắt Gói Tin",
+        "external_kafka": "Luồng Kafka Bên Ngoài",
+        "internal_kafka": "Luồng Kafka Nội Bộ"
+      },
+      "enabled": "Đã Bật",
+      "disabled": "Đã Tắt",
+      "toggleSuccess": "{source} {status} thành công",
+      "toggleError": "Không thể bật/tắt {source}"
+    },
+    "ipWhitelist": {
+      "title": "Danh Sách Cho Phép IP (Nhà Cung Cấp Dữ Liệu Bên Ngoài)",
+      "description": "Quản lý các địa chỉ IP được phép gửi dữ liệu qua luồng Kafka bên ngoài. Chỉ các IP trong danh sách cho phép mới có thể gửi dữ liệu lưu lượng để phân tích.",
+      "addNew": "Thêm Địa Chỉ IP Mới",
+      "ipPlaceholder": "Địa chỉ IP (ví dụ: 192.168.1.100)",
+      "descriptionPlaceholder": "Mô tả (tùy chọn)",
+      "addButton": "Thêm IP",
+      "loading": "Đang tải danh sách cho phép...",
+      "noWhitelist": "Chưa có IP nào trong danh sách cho phép. Thêm một IP ở trên để bắt đầu.",
+      "table": {
+        "ipAddress": "Địa Chỉ IP",
+        "description": "Mô Tả",
+        "status": "Trạng Thái",
+        "createdAt": "Ngày Tạo",
+        "actions": "Hành Động",
+        "active": "Hoạt Động",
+        "inactive": "Không Hoạt Động",
+        "delete": "Xóa"
+      },
+      "errors": {
+        "ipRequired": "Địa chỉ IP là bắt buộc",
+        "invalidIP": "Định dạng địa chỉ IP không hợp lệ (phải là IPv4, ví dụ: 192.168.1.100)",
+        "addFailed": "Không thể thêm IP vào danh sách cho phép",
+        "deleteFailed": "Không thể xóa IP khỏi danh sách cho phép",
+        "updateFailed": "Không thể cập nhật trạng thái IP",
+        "loadFailed": "Không thể tải cài đặt"
+      },
+      "success": {
+        "added": "Đã thêm IP {ip} vào danh sách cho phép",
+        "removed": "Đã xóa IP {ip} khỏi danh sách cho phép",
+        "statusUpdated": "Đã cập nhật trạng thái IP"
+      },
+      "confirmDelete": "Bạn có chắc chắn muốn xóa {ip} khỏi danh sách cho phép?"
     }
   },
   "common": {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { startTestStream } from '@/lib/api';
 import { StatCard } from '@/components/StatCard';
@@ -42,6 +43,7 @@ interface RealtimePrediction {
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000';
 
 export default function RealtimePage() {
+  const t = useTranslations('realtime');
   const [predictions, setPredictions] = useState<RealtimePrediction[]>([]);
   const [streamActive, setStreamActive] = useState(false);
   const [throughputData, setThroughputData] = useState<Array<{
@@ -152,10 +154,10 @@ export default function RealtimePage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gradient-cyan">
-            Real-time Threat Monitor
+            {t('title')}
           </h1>
           <p className="text-muted-foreground mt-1 flex items-center gap-2">
-            Live network traffic analysis and threat detection
+            {t('subtitle')}
           </p>
         </div>
         <div className="flex items-center gap-4">
@@ -170,7 +172,7 @@ export default function RealtimePage() {
                   <div className="h-3 w-3 rounded-full bg-status-safe animate-pulse-glow" />
                   <Wifi className="h-4 w-4 text-status-safe" />
                   <span className="text-sm font-medium text-status-safe">
-                    Connected
+                    {t('connected')}
                   </span>
                 </>
               ) : (
@@ -178,7 +180,7 @@ export default function RealtimePage() {
                   <div className="h-3 w-3 rounded-full bg-destructive animate-pulse" />
                   <WifiOff className="h-4 w-4 text-destructive" />
                   <span className="text-sm font-medium text-destructive">
-                    Disconnected
+                    {t('disconnected')}
                   </span>
                 </>
               )}
@@ -197,12 +199,12 @@ export default function RealtimePage() {
             {streamActive ? (
               <>
                 <Pause className="h-4 w-4 mr-2 animate-pulse" />
-                Stream Active...
+                {t('streamActive')}
               </>
             ) : (
               <>
                 <Play className="h-4 w-4 mr-2" />
-                Start Test Stream
+                {t('startTestStream')}
               </>
             )}
           </Button>
@@ -212,26 +214,26 @@ export default function RealtimePage() {
       {/* Live Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="Events Received"
+          title={t('stats.eventsReceived')}
           value={stats.total.toLocaleString()}
           icon={Activity}
           variant="default"
           badge="LIVE"
         />
         <StatCard
-          title="Threats Detected"
+          title={t('stats.threatsDetected')}
           value={stats.attacks.toLocaleString()}
           icon={AlertTriangle}
           variant="threat"
         />
         <StatCard
-          title="Normal Traffic"
+          title={t('stats.normalTraffic')}
           value={stats.normal.toLocaleString()}
           icon={Shield}
           variant="success"
         />
         <StatCard
-          title="Avg Threat Score"
+          title={t('stats.avgThreatScore')}
           value={stats.avgThreatScore.toFixed(3)}
           icon={Zap}
           variant="warning"

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface ThreatData {
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export default function ThreatDetectionChart({ data }: Props) {
+  const t = useTranslations('dashboard.chart');
   const chartData = data.map((item, index) => ({
     index: index + 1,
     score: item.score,
@@ -22,17 +24,17 @@ export default function ThreatDetectionChart({ data }: Props) {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow">
-      <h3 className="text-lg font-semibold mb-4">Threat Detection Scores</h3>
+      <h3 className="text-lg font-semibold mb-4">{t('title')}</h3>
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             dataKey="index"
-            label={{ value: 'Prediction #', position: 'insideBottom', offset: -5 }}
+            label={{ value: t('predictionNumber'), position: 'insideBottom', offset: -5 }}
           />
           <YAxis
             domain={[0, 1]}
-            label={{ value: 'Score', angle: -90, position: 'insideLeft' }}
+            label={{ value: t('score'), angle: -90, position: 'insideLeft' }}
           />
           <Tooltip />
           <Legend />
@@ -40,7 +42,7 @@ export default function ThreatDetectionChart({ data }: Props) {
             type="monotone"
             dataKey="score"
             stroke="#3b82f6"
-            name="Threat Score"
+            name={t('threatScore')}
             strokeWidth={2}
           />
           <Line
@@ -48,7 +50,7 @@ export default function ThreatDetectionChart({ data }: Props) {
             dataKey="threshold"
             stroke="#ef4444"
             strokeDasharray="5 5"
-            name="Threshold (0.5)"
+            name={t('threshold')}
           />
         </LineChart>
       </ResponsiveContainer>

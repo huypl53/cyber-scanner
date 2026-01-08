@@ -3,6 +3,20 @@
     "title": "AI Shield - Threat Detection System",
     "description": "Real-time network threat detection and self-healing AI system"
   },
+  "languageSwitcher": {
+    "switch": "Switch language",
+    "changeLanguage": "Change language",
+    "selectLanguage": "Select a language",
+    "current": "current"
+  },
+  "header": {
+    "default": "AI Shield",
+    "home": "Network Traffic Analysis",
+    "dashboard": "Threat Intelligence Dashboard",
+    "realtime": "Real-time Monitor",
+    "models": "Model Management",
+    "settings": "Settings"
+  },
   "sidebar": {
     "brand": "AI Shield",
     "subtitle": "Threat Detection",
@@ -70,6 +84,224 @@
       "normalTraffic": "Normal Traffic",
       "attackRate": "Attack Rate",
       "criticalBadge": "Critical"
+    },
+    "chart": {
+      "title": "Threat Detection Scores",
+      "predictionNumber": "Prediction #",
+      "score": "Score",
+      "threatScore": "Threat Score",
+      "threshold": "Threshold (0.5)"
+    },
+    "heatmap": {
+      "title": "Attack Patterns",
+      "subtitle": "by time",
+      "lessActivity": "Less activity",
+      "moreActivity": "More activity",
+      "attacks": "attacks",
+      "days": {
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat",
+        "sun": "Sun"
+      }
+    },
+    "threats": {
+      "title": "Recent Threats",
+      "active": "Active",
+      "table": {
+        "severity": "Severity",
+        "timestamp": "Timestamp",
+        "sourceIp": "Source IP",
+        "attackType": "Attack Type",
+        "confidence": "Confidence",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "actions": {
+        "investigate": "Investigate",
+        "blockIp": "Block IP",
+        "viewDetails": "View Details"
+      },
+      "severity": {
+        "critical": "CRITICAL",
+        "high": "HIGH",
+        "medium": "MEDIUM",
+        "low": "LOW"
+      },
+      "status": {
+        "active": "ACTIVE",
+        "mitigated": "MITIGATED",
+        "investigating": "INVESTIGATING"
+      }
+    }
+  },
+  "realtime": {
+    "title": "Real-time Threat Monitor",
+    "subtitle": "Live network traffic analysis and threat detection",
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "startTestStream": "Start Test Stream",
+    "streamActive": "Stream Active...",
+    "stats": {
+      "eventsReceived": "Events Received",
+      "threatsDetected": "Threats Detected",
+      "normalTraffic": "Normal Traffic",
+      "avgThreatScore": "Avg Threat Score"
+    },
+    "throughput": {
+      "title": "Traffic Throughput",
+      "subtitle": "events/sec",
+      "waitingForData": "Waiting for traffic data...",
+      "threatTraffic": "Threat Traffic",
+      "normalTraffic": "Normal Traffic"
+    },
+    "feed": {
+      "title": "Live Traffic Feed",
+      "streaming": "Streaming",
+      "waitingForData": "Waiting for traffic data...",
+      "startStreamHint": "// Start test stream to generate sample traffic",
+      "badge": {
+        "threat": "THREAT",
+        "normal": "NORMAL",
+        "action": "ACTION",
+        "system": "SYSTEM"
+      },
+      "metadata": {
+        "score": "score",
+        "type": "type",
+        "confidence": "confidence"
+      }
+    }
+  },
+  "models": {
+    "title": "Model Management",
+    "subtitle": "Upload, manage, and activate ML models for threat detection and attack classification",
+    "stats": {
+      "title": "Storage Statistics",
+      "totalModels": "Total Models",
+      "totalSize": "Total Size",
+      "threatDetector": "Threat Detector",
+      "attackClassifier": "Attack Classifier",
+      "activeModels": "Active Models:"
+    },
+    "profiles": {
+      "title": "Active Model Profiles",
+      "features": "Features",
+      "classes": "Classes",
+      "notes": "Notes"
+    },
+    "upload": {
+      "title": "Upload New Model",
+      "modelType": "Model Type",
+      "threatDetectorOption": "Threat Detector (10 features)",
+      "attackClassifierOption": "Attack Classifier (42 features)",
+      "fileLabel": "Model File (.pkl, .joblib, or .h5)",
+      "descriptionLabel": "Description (Optional)",
+      "descriptionPlaceholder": "e.g., LSTM model trained on NSL-KDD dataset",
+      "customProfile": "Custom Model Profile (Optional)",
+      "show": "Show",
+      "hide": "Hide",
+      "profileHint": "Provide custom feature list and class labels as JSON. Leave empty to use defaults.",
+      "selected": "Selected",
+      "uploadButton": "Upload Model",
+      "uploading": "Uploading...",
+      "errors": {
+        "invalidFormat": "Invalid file format. Supported: .pkl, .joblib, .h5",
+        "selectFile": "Please select a file",
+        "invalidJson": "Invalid JSON in profile configuration"
+      }
+    },
+    "list": {
+      "title": "Uploaded Models",
+      "filterAll": "All Models",
+      "filterThreatDetector": "Threat Detector",
+      "filterAttackClassifier": "Attack Classifier",
+      "loading": "Loading models...",
+      "noModels": "No models uploaded yet",
+      "table": {
+        "type": "Type",
+        "version": "Version",
+        "filename": "Filename",
+        "status": "Status",
+        "size": "Size",
+        "uploaded": "Uploaded",
+        "actions": "Actions",
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "actions": {
+        "activate": "Activate",
+        "deactivate": "Deactivate",
+        "delete": "Delete"
+      },
+      "confirmDelete": "Are you sure you want to delete this model? This action cannot be undone."
+    },
+    "success": {
+      "uploaded": "Model uploaded successfully! Version: {version}",
+      "activated": "Model activated successfully",
+      "deactivated": "Model deactivated successfully",
+      "deleted": "Model deleted successfully"
+    },
+    "errors": {
+      "loadFailed": "Failed to load models: {error}",
+      "uploadFailed": "Upload failed: {error}",
+      "activationFailed": "Activation failed: {error}",
+      "deactivationFailed": "Deactivation failed: {error}",
+      "deletionFailed": "Deletion failed: {error}"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "dataSources": {
+      "title": "Data Sources",
+      "description": "Enable or disable data collection sources. Multiple sources can run simultaneously.",
+      "loading": "Loading data sources...",
+      "sources": {
+        "packet_capture": "Packet Capture",
+        "external_kafka": "External Kafka Stream",
+        "internal_kafka": "Internal Kafka Stream"
+      },
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "toggleSuccess": "{source} {status} successfully",
+      "toggleError": "Failed to toggle {source}"
+    },
+    "ipWhitelist": {
+      "title": "IP Whitelist (External Data Providers)",
+      "description": "Manage IP addresses allowed to send data via the external Kafka stream. Only whitelisted IPs can send traffic data for analysis.",
+      "addNew": "Add New IP Address",
+      "ipPlaceholder": "IP Address (e.g., 192.168.1.100)",
+      "descriptionPlaceholder": "Description (optional)",
+      "addButton": "Add IP",
+      "loading": "Loading whitelist...",
+      "noWhitelist": "No whitelisted IPs yet. Add one above to get started.",
+      "table": {
+        "ipAddress": "IP Address",
+        "description": "Description",
+        "status": "Status",
+        "createdAt": "Created At",
+        "actions": "Actions",
+        "active": "Active",
+        "inactive": "Inactive",
+        "delete": "Delete"
+      },
+      "errors": {
+        "ipRequired": "IP address is required",
+        "invalidIP": "Invalid IP address format (must be IPv4, e.g., 192.168.1.100)",
+        "addFailed": "Failed to add IP to whitelist",
+        "deleteFailed": "Failed to delete IP from whitelist",
+        "updateFailed": "Failed to update IP status",
+        "loadFailed": "Failed to load settings"
+      },
+      "success": {
+        "added": "IP {ip} added to whitelist",
+        "removed": "IP {ip} removed from whitelist",
+        "statusUpdated": "IP status updated"
+      },
+      "confirmDelete": "Are you sure you want to remove {ip} from the whitelist?"
     }
   },
   "common": {
