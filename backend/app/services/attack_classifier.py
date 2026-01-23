@@ -4,15 +4,14 @@ Performs multi-class classification: 14 attack types.
 """
 from typing import Dict
 from sqlalchemy.orm import Session
-from app.models.ml_models import get_decision_tree_model
+from app.models.model_loaders import predict_attack_type, get_model_version
 from app.models.database import TrafficData, AttackPrediction
 
 
 class AttackClassifierService:
     """Service for classifying attack types using decision tree model."""
 
-    def __init__(self):
-        self.model = get_decision_tree_model()
+    # No init needed - models are loaded lazily with singleton caching
 
     def predict(
         self,
@@ -31,8 +30,8 @@ class AttackClassifierService:
         Returns:
             AttackPrediction database object
         """
-        # Get prediction from decision tree model
-        attack_type_encoded, attack_type_name, confidence = self.model.predict(features)
+        # Get prediction from attack classification pipeline
+        attack_type_encoded, attack_type_name, confidence = predict_attack_type(features)
 
         # Create prediction record
         prediction = AttackPrediction(
@@ -40,7 +39,7 @@ class AttackClassifierService:
             attack_type_encoded=attack_type_encoded,
             attack_type_name=attack_type_name,
             confidence=confidence,
-            model_version=self.model.model_version
+            model_version=get_model_version("attack")
         )
 
         # Save to database
@@ -68,16 +67,17 @@ class AttackClassifierService:
             List of AttackPrediction objects
         """
         predictions = []
+        model_version = get_model_version("attack")
 
         for features, traffic_id in zip(features_list, traffic_data_ids):
-            attack_type_encoded, attack_type_name, confidence = self.model.predict(features)
+            attack_type_encoded, attack_type_name, confidence = predict_attack_type(features)
 
             prediction = AttackPrediction(
                 traffic_data_id=traffic_id,
                 attack_type_encoded=attack_type_encoded,
                 attack_type_name=attack_type_name,
                 confidence=confidence,
-                model_version=self.model.model_version
+                model_version=model_version
             )
             predictions.append(prediction)
 

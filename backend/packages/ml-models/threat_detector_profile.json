@@ -1,0 +1,44 @@
+{
+  "expected_features": [
+    "protocol_type",
+    "service",
+    "flag",
+    "src_bytes",
+    "dst_bytes",
+    "count",
+    "same_srv_rate",
+    "diff_srv_rate",
+    "dst_host_srv_count",
+    "dst_host_same_srv_rate"
+  ],
+  "class_labels": [
+    "Normal",
+    "Attack"
+  ],
+  "preprocessing_notes": "Ensemble model (ANN + LSTM) with internal preprocessing. Performs RFE feature selection (10 features selected from original dataset). Label encoding and standardization applied internally. Raw input data must contain all original features including categorical: protocol_type, service, flag.",
+  "preprocessing_pipeline": {
+    "steps": [
+      "label_encoding",
+      "rfe_feature_selection",
+      "standard_scaling"
+    ],
+    "categorical_features": [
+      "protocol_type",
+      "service",
+      "flag"
+    ],
+    "selected_features": [
+      "protocol_type",
+      "service",
+      "flag",
+      "src_bytes",
+      "dst_bytes",
+      "count",
+      "same_srv_rate",
+      "diff_srv_rate",
+      "dst_host_srv_count",
+      "dst_host_same_srv_rate"
+    ],
+    "n_features_selected": 10
+  }
+}

@@ -1,47 +1,44 @@
 """Tests for ML models"""
 import pytest
-from app.models.ml_models import EnsembleModel, DecisionTreeModel
+from app.models.model_loaders import predict_threat, predict_attack_type, ATTACK_TYPES
 
 
-class TestEnsembleModel:
-    """Test Ensemble threat detection model"""
+class TestThreatDetection:
+    """Test threat detection using ml_models package"""
 
     def test_predict_normal_traffic(self):
         """Test prediction for normal traffic"""
-        model = EnsembleModel()
         features = {
-            'service': 5,
             'flag': 2,
             'src_bytes': 100,
             'dst_bytes': 200,
             'count': 5,
-            'same_srv_rate': 0.8,
             'diff_srv_rate': 0.1,
             'dst_host_srv_count': 50,
             'dst_host_same_srv_rate': 0.75,
-            'dst_host_same_src_port_rate': 0.9
+            'dst_host_diff_srv_rate': 0.1,
+            'dst_host_same_src_port_rate': 0.9,
+            'dst_host_srv_diff_host_rate': 0.1
         }
 
-        score, is_attack = model.predict(features)
+        score, is_attack = predict_threat(features)
 
         assert 0 <= score <= 1
         assert isinstance(is_attack, bool)
 
     def test_predict_missing_features(self):
         """Test that missing features raise error"""
-        model = EnsembleModel()
-        features = {'service': 5}  # Missing most features
+        features = {'flag': 2}  # Missing most features
 
         with pytest.raises(ValueError):
-            model.predict(features)
+            predict_threat(features)
 
 
-class TestDecisionTreeModel:
-    """Test Decision Tree attack classification model"""
+class TestAttackClassification:
+    """Test attack classification using ml_models package"""
 
     def test_predict_attack_classification(self):
         """Test attack classification"""
-        model = DecisionTreeModel()
         features = {
             ' Destination Port': 80,
             ' Flow Duration': 5000,
@@ -87,8 +84,8 @@ class TestDecisionTreeModel:
             ' Idle Std': 25
         }
 
-        attack_type_encoded, attack_type_name, confidence = model.predict(features)
+        attack_type_encoded, attack_type_name, confidence = predict_attack_type(features)
 
         assert 0 <= attack_type_encoded <= 13
-        assert attack_type_name in model.ATTACK_TYPES.values()
+        assert attack_type_name in ATTACK_TYPES.values()
         assert 0 <= confidence <= 1

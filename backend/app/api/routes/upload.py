@@ -11,13 +11,108 @@ from app.services.attack_classifier import AttackClassifierService
 from app.services.self_healing import SelfHealingService
 from app.models.database import TrafficData
 from app.models.schemas import CSVUploadResponse, CompletePredictionResponse
+from app.models.model_loaders import (
+    THREAT_DETECTION_FEATURES,
+    ATTACK_CLASSIFICATION_FEATURES
+)
 import pandas as pd
 import io
 import uuid
 from datetime import datetime
 from typing import List
+from fastapi.responses import FileResponse
+from pathlib import Path
 
 router = APIRouter()
+
+
+def _build_csv_validation_error(
+    df_columns: List[str],
+    error_message: str
+) -> dict:
+    """
+    Build a detailed CSV validation error response.
+
+    Provides helpful information including:
+    - What features were found in the CSV
+    - What features are required for each model type
+    - Which features are missing
+    - Example header lines for reference
+    """
+    csv_headers = [str(col).strip() for col in df_columns]
+
+    # Check against both feature sets
+    threat_matches = sum(
+        1 for h in csv_headers
+        if h.lower().replace('_', ' ').replace(' ', '') in
+        [f.lower().replace('_', ' ').replace(' ', '') for f in THREAT_DETECTION_FEATURES]
+    )
+    attack_matches = sum(
+        1 for h in csv_headers
+        if h.lower().replace('_', ' ').replace(' ', '') in
+        [f.lower().replace('_', ' ').replace(' ', '') for f in ATTACK_CLASSIFICATION_FEATURES]
+    )
+
+    # Determine likely intended model type
+    likely_model = None
+    if threat_matches >= 8:
+        likely_model = "threat_detection"
+    elif attack_matches >= 30:
+        likely_model = "attack_classification"
+
+    # Build required features list based on likely model
+    if likely_model == "threat_detection":
+        required_features = list(THREAT_DETECTION_FEATURES)
+        model_name = "Threat Detection (10 features)"
+    elif likely_model == "attack_classification":
+        required_features = list(ATTACK_CLASSIFICATION_FEATURES)
+        model_name = "Attack Classification (42 features)"
+    else:
+        # Ambiguous - show both options
+        required_features = []
+        model_name = "Unknown - please check format"
+
+    # Calculate missing features
+    missing_features = []
+    if likely_model and required_features:
+        normalized_headers = [h.lower().replace('_', ' ').replace(' ', '') for h in csv_headers]
+        for feat in required_features:
+            feat_normalized = feat.lower().replace('_', ' ').replace(' ', '')
+            if feat_normalized not in normalized_headers:
+                missing_features.append(feat)
+
+    # Example headers
+    threat_example = ",".join(THREAT_DETECTION_FEATURES)
+    attack_example = ",".join([f"'{f}'" if f.startswith(' ') else f for f in ATTACK_CLASSIFICATION_FEATURES[:10]]) + ",..."
+
+    return {
+        "error": "CSV validation failed",
+        "message": error_message,
+        "csv_headers_found": csv_headers,
+        "header_count": len(csv_headers),
+        "detected_model_type": likely_model,
+        "details": {
+            "threat_detection_matches": threat_matches,
+            "attack_classification_matches": attack_matches,
+        },
+        "required_features": required_features if likely_model else ["See sample files"],
+        "missing_features": missing_features,
+        "sample_formats": {
+            "threat_detection": {
+                "description": "10 features for binary threat detection",
+                "example_header": threat_example
+            },
+            "attack_classification": {
+                "description": "42 features for multi-class attack classification",
+                "example_header": attack_example,
+                "note": "Some headers have leading spaces, e.g., ' Destination Port'"
+            }
+        },
+        "help": {
+            "download_samples": "GET /api/v1/samples/ for downloadable sample files",
+            "documentation": "See backend/samples/README.md for detailed format information"
+        }
+    }
 
 
 @router.post("/upload/csv", response_model=CSVUploadResponse)
@@ -60,7 +155,9 @@ async def upload_csv(
         try:
             features_list, model_type = preprocessor.process_csv_dataframe(df)
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=f"CSV validation error: {str(e)}")
+            # Build detailed validation error
+            error_detail = _build_csv_validation_error(df.columns, str(e))
+            raise HTTPException(status_code=400, detail=error_detail)
 
         # Store traffic data in database
         traffic_data_records = []
@@ -209,3 +306,57 @@ async def get_batch_predictions(batch_id: str, db: Session = Depends(get_db)):
         "total_rows": len(traffic_records),
         "predictions": predictions_response
     }
+
+
+# Sample file serving
+# Path from /app/app/api/routes/upload.py -> /app/samples/
+SAMPLES_DIR = Path(__file__).parent.parent.parent.parent / "samples"
+
+
+@router.get("/samples")
+async def list_samples():
+    """List available sample CSV files."""
+    samples = [
+        {
+            "name": "threat_detection_sample.csv",
+            "description": "10 features for binary threat detection",
+            "download_url": "/api/v1/samples/threat_detection_sample.csv"
+        },
+        {
+            "name": "attack_classification_sample.csv",
+            "description": "42 features for multi-class attack classification",
+            "download_url": "/api/v1/samples/attack_classification_sample.csv"
+        }
+    ]
+    return {"samples": samples}
+
+
+@router.get("/samples/{filename}")
+async def download_sample(filename: str):
+    """Download a sample CSV file."""
+    # Security: only allow specific filenames
+    allowed_files = {
+        "threat_detection_sample.csv",
+        "attack_classification_sample.csv"
+    }
+
+    if filename not in allowed_files:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Sample file not found. Available: {', '.join(allowed_files)}"
+        )
+
+    file_path = SAMPLES_DIR / filename
+
+    if not file_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=f"Sample file '{filename}' not found on server"
+        )
+
+    return FileResponse(
+        path=file_path,
+        filename=filename,
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
