@@ -176,7 +176,16 @@ def train_attack_classifier():
     df = df.replace([np.inf, -np.inf], np.nan).dropna()
 
     # Encode label
-    label_column = ' Label' if ' Label' in df.columns else 'Label'
+    # Support both clean 'Label' and CICFlowMeter-style ' Label' (leading space)
+    if 'Label' in df.columns:
+        label_column = 'Label'
+    elif ' Label' in df.columns:
+        label_column = ' Label'
+    else:
+        raise KeyError(
+            f"Label column not found. Expected 'Label' or ' Label', "
+            f"got columns: {list(df.columns)}"
+        )
     print(f"\nAttack types in data:\n{df[label_column].value_counts()}")
 
     le = LabelEncoder()
@@ -319,26 +328,26 @@ def create_synthetic_attack_data():
 
     # Generate 42 features
     feature_names = [
-        ' Destination Port', ' Flow Duration', ' Total Fwd Packets',
-        'Total Length of Fwd Packets', ' Fwd Packet Length Max',
-        ' Fwd Packet Length Min', 'Bwd Packet Length Max',
-        ' Bwd Packet Length Min', 'Flow Bytes/s', ' Flow Packets/s',
-        ' Flow IAT Mean', ' Flow IAT Std', ' Flow IAT Min', 'Bwd IAT Total',
-        ' Bwd IAT Std', 'Fwd PSH Flags', ' Bwd PSH Flags', ' Fwd URG Flags',
-        ' Bwd URG Flags', ' Fwd Header Length', ' Bwd Header Length',
-        ' Bwd Packets/s', ' Min Packet Length', 'FIN Flag Count',
-        ' RST Flag Count', ' PSH Flag Count', ' ACK Flag Count',
-        ' URG Flag Count', ' Down/Up Ratio', 'Fwd Avg Bytes/Bulk',
-        ' Fwd Avg Packets/Bulk', ' Fwd Avg Bulk Rate', ' Bwd Avg Bytes/Bulk',
-        ' Bwd Avg Packets/Bulk', 'Bwd Avg Bulk Rate', 'Init_Win_bytes_forward',
-        ' Init_Win_bytes_backward', ' min_seg_size_forward', 'Active Mean',
-        ' Active Std', ' Active Max', ' Idle Std'
+        'Destination Port', 'Flow Duration', 'Total Fwd Packets',
+        'Total Length of Fwd Packets', 'Fwd Packet Length Max',
+        'Fwd Packet Length Min', 'Bwd Packet Length Max',
+        'Bwd Packet Length Min', 'Flow Bytes/s', 'Flow Packets/s',
+        'Flow IAT Mean', 'Flow IAT Std', 'Flow IAT Min', 'Bwd IAT Total',
+        'Bwd IAT Std', 'Fwd PSH Flags', 'Bwd PSH Flags', 'Fwd URG Flags',
+        'Bwd URG Flags', 'Fwd Header Length', 'Bwd Header Length',
+        'Bwd Packets/s', 'Min Packet Length', 'FIN Flag Count',
+        'RST Flag Count', 'PSH Flag Count', 'ACK Flag Count',
+        'URG Flag Count', 'Down/Up Ratio', 'Fwd Avg Bytes/Bulk',
+        'Fwd Avg Packets/Bulk', 'Fwd Avg Bulk Rate', 'Bwd Avg Bytes/Bulk',
+        'Bwd Avg Packets/Bulk', 'Bwd Avg Bulk Rate', 'Init_Win_bytes_forward',
+        'Init_Win_bytes_backward', 'min_seg_size_forward', 'Active Mean',
+        'Active Std', 'Active Max', 'Idle Std'
     ]
 
     for feature in feature_names:
         data[feature] = np.random.randn(n_samples) * 1000
 
-    data[' Label'] = np.random.choice(attack_labels, n_samples)
+    data['Label'] = np.random.choice(attack_labels, n_samples)
 
     return pd.DataFrame(data)
 

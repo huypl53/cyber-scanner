@@ -18,213 +18,157 @@ class DataPreprocessor:
     THREAT_DETECTION_FEATURES = THREAT_DETECTION_FEATURES
     ATTACK_CLASSIFICATION_FEATURES = ATTACK_CLASSIFICATION_FEATURES
 
-    # Header mapping for common CSV header variations
-    # Maps common header name variations to the expected feature names
+    # Header mapping for common CSV header variations.
+    # Maps alternative/shorthand names to canonical clean (stripped) feature names.
+    # Note: _normalize_header_name() strips whitespace first, so polluted CSV
+    # headers like ' Destination Port' become 'Destination Port' before lookup.
     HEADER_MAPPINGS = {
-    # Attack classification - variations with common name differences
-    'Destination Port': ' Destination Port',
-    'destination_port': ' Destination Port',
-    'dest_port': ' Destination Port',
-    'Dest Port': ' Destination Port',
+    # Attack classification - alternative name variations
+    'destination_port': 'Destination Port',
+    'dest_port': 'Destination Port',
+    'Dest Port': 'Destination Port',
 
-    'Flow Duration': ' Flow Duration',
-    'flow_duration': ' Flow Duration',
+    'flow_duration': 'Flow Duration',
 
-    'Total Fwd Packets': ' Total Fwd Packets',
-    'total_fwd_packets': ' Total Fwd Packets',
     'total_fwd_packets': 'Total Fwd Packets',
 
-    'Total Length of Fwd Packets': 'Total Length of Fwd Packets',
     'total_length_of_fwd_packets': 'Total Length of Fwd Packets',
     'total_length_fwd_packets': 'Total Length of Fwd Packets',
 
-    'Fwd Packet Length Max': ' Fwd Packet Length Max',
-    'fwd_packet_length_max': ' Fwd Packet Length Max',
-    'fwd_packet_len_max': ' Fwd Packet Length Max',
+    'fwd_packet_length_max': 'Fwd Packet Length Max',
+    'fwd_packet_len_max': 'Fwd Packet Length Max',
 
-    'Fwd Packet Length Min': ' Fwd Packet Length Min',
     'fwd_packet_length_min': 'Fwd Packet Length Min',
-    'fwd_packet_len_min': ' Fwd Packet Length Min',
+    'fwd_packet_len_min': 'Fwd Packet Length Min',
 
-    'Bwd Packet Length Max': 'Bwd Packet Length Max',
     'bwd_packet_length_max': 'Bwd Packet Length Max',
     'bwd_packet_len_max': 'Bwd Packet Length Max',
 
-    'Bwd Packet Length Min': 'Bwd Packet Length Min',
     'bwd_packet_length_min': 'Bwd Packet Length Min',
     'bwd_packet_len_min': 'Bwd Packet Length Min',
 
-    'Flow Bytes/s': 'Flow Bytes/s',
     'flow_bytes_per_sec': 'Flow Bytes/s',
     'flow_rate': 'Flow Bytes/s',
 
-    'Flow Packets/s': ' Flow Packets/s',
-    'flow_packets_per_sec': ' Flow Packets/s',
-    'packet_rate': ' Flow Packets/s',
+    'flow_packets_per_sec': 'Flow Packets/s',
+    'packet_rate': 'Flow Packets/s',
 
-    'Flow IAT Mean': ' Flow IAT Mean',
-    'flow_iat_mean': ' Flow IAT Mean',
-    'iat_mean': ' Flow IAT Mean',
+    'flow_iat_mean': 'Flow IAT Mean',
+    'iat_mean': 'Flow IAT Mean',
 
-    'Flow IAT Std': ' Flow IAT Std',
-    'flow_iat_std': ' Flow IAT Std',
-    'iat_std': ' Flow IAT Std',
+    'flow_iat_std': 'Flow IAT Std',
+    'iat_std': 'Flow IAT Std',
 
-    'Flow IAT Min': ' Flow IAT Min',
-    'flow_iat_min': ' Flow IAT Min',
-    'iat_min': ' Flow IAT Min',
+    'flow_iat_min': 'Flow IAT Min',
+    'iat_min': 'Flow IAT Min',
 
-    'Bwd IAT Total': 'Bwd IAT Total',
-    'bwd_iat_total': 'Bwd IAT Total',
     'bwd_iat_total': 'Bwd IAT Total',
 
-    'Bwd IAT Std': ' Bwd IAT Std',
-    'bwd_iat_std': ' Bwd IAT Std',
     'bwd_iat_std': 'Bwd IAT Std',
 
-    'Fwd PSH Flags': 'Fwd PSH Flags',
     'fwd_psh_flags': 'Fwd PSH Flags',
     'fwd_psh': 'Fwd PSH Flags',
 
-    'Bwd PSH Flags': 'Bwd PSH Flags',
     'bwd_psh_flags': 'Bwd PSH Flags',
     'bwd_psh': 'Bwd PSH Flags',
 
-    'Fwd URG Flags': ' Fwd URG Flags',
-    'fwd_urg_flags': ' Fwd URG Flags',
-    'fwd_urg': ' Fwd URG Flags',
+    'fwd_urg_flags': 'Fwd URG Flags',
+    'fwd_urg': 'Fwd URG Flags',
 
-    'Bwd URG Flags': ' Bwd URG Flags',
     'bwd_urg_flags': 'Bwd URG Flags',
     'bwd_urg': 'Bwd URG Flags',
 
-    'Fwd Header Length': ' Fwd Header Length',
-    'fwd_header_length': ' Fwd Header Length',
-    'fwd_hdr_len': ' Fwd Header Length',
+    'fwd_header_length': 'Fwd Header Length',
+    'fwd_hdr_len': 'Fwd Header Length',
 
-    'Bwd Header Length': ' Bwd Header Length',
-    'bwd_header_length': ' Bwd Header Length',
-    'bwd_hdr_len': ' Bwd Header Length',
+    'bwd_header_length': 'Bwd Header Length',
+    'bwd_hdr_len': 'Bwd Header Length',
 
-    'Bwd Packets/s': ' Bwd Packets/s',
-    'bwd_packets_per_sec': ' Bwd Packets/s',
-    'bwd_packet_rate': ' Bwd Packets/s',
+    'bwd_packets_per_sec': 'Bwd Packets/s',
+    'bwd_packet_rate': 'Bwd Packets/s',
 
-    'Min Packet Length': ' Min Packet Length',
-    'min_packet_length': ' Min Packet Length',
-    'min_pkt_len': ' Min Packet Length',
+    'min_packet_length': 'Min Packet Length',
+    'min_pkt_len': 'Min Packet Length',
 
-    'FIN Flag Count': 'FIN Flag Count',
     'fin_flag_cnt': 'FIN Flag Count',
     'fin_flags': 'FIN Flag Count',
 
-    'RST Flag Count': 'RST Flag Count',
     'rst_flag_count': 'RST Flag Count',
     'rst_flags': 'RST Flag Count',
 
-    'PSH Flag Count': ' PSH Flag Count',
     'psh_flag_count': 'PSH Flag Count',
     'psh_flags': 'PSH Flag Count',
 
-    'ACK Flag Count': 'ACK Flag Count',
     'ack_flag_count': 'ACK Flag Count',
     'ack_flags': 'ACK Flag Count',
 
-    'URG Flag Count': 'URG Flag Count',
     'urg_flag_count': 'URG Flag Count',
     'urg_flags': 'URG Flag Count',
 
-    'Down/Up Ratio': 'Down/Up Ratio',
     'down_up_ratio': 'Down/Up Ratio',
     'down_up': 'Down/Up Ratio',
 
-    'Fwd Avg Bytes/Bulk': 'Fwd Avg Bytes/Bulk',
     'fwd_avg_bytes_per_bulk': 'Fwd Avg Bytes/Bulk',
     'fwd_avg_bytes_bulk': 'Fwd Avg Bytes/Bulk',
 
-    'Fwd Avg Packets/Bulk': 'Fwd Avg Packets/Bulk',
     'fwd_avg_packets_per_bulk': 'Fwd Avg Packets/Bulk',
     'fwd_avg_packets_bulk': 'Fwd Avg Packets/Bulk',
 
-    'Fwd Avg Bulk Rate': ' Fwd Avg Bulk Rate',
-    'fwd_avg_bulk_rate': ' Fwd Avg Bulk Rate',
     'fwd_avg_bulk_rate': 'Fwd Avg Bulk Rate',
 
-    'Bwd Avg Bytes/Bulk': ' Bwd Avg Bytes/Bulk',
     'bwd_avg_bytes_per_bulk': 'Bwd Avg Bytes/Bulk',
     'bwd_avg_bytes_bulk': 'Bwd Avg Bytes/Bulk',
 
-    'Bwd Avg Packets/Bulk': 'Bwd Avg Packets/Bulk',
     'bwd_avg_packets_per_bulk': 'Bwd Avg Packets/Bulk',
     'bwd_avg_packets_bulk': 'Bwd Avg Packets/Bulk',
 
-    'Bwd Avg Bulk Rate': 'Bwd Avg Bulk Rate',
-    'bwd_avg_bulk_rate': 'Bwd Avg Bulk Rate',
     'bwd_avg_bulk_rate': 'Bwd Avg Bulk Rate',
 
-    'Init_Win_bytes_forward': 'Init_Win_bytes_forward',
     'init_win_bytes_fwd': 'Init_Win_bytes_forward',
     'init_win_fwd': 'Init_Win_bytes_forward',
 
-    'Init_Win_bytes_backward': 'Init_Win_bytes_backward',
     'init_win_bytes_bwd': 'Init_Win_bytes_backward',
     'init_win_bwd': 'Init_Win_bytes_backward',
 
-    'min_seg_size_forward': ' min_seg_size_forward',
-    'min_seg_size_fwd': 'min_seg_size_forward',
     'min_seg_size_fwd': 'min_seg_size_forward',
 
-    'Active Mean': 'Active Mean',
     'active_mean': 'Active Mean',
     'avg_active': 'Active Mean',
 
-    'Active Std': ' Active Std',
     'active_std': 'Active Std',
     'active_stdev': 'Active Std',
 
-    'Active Max': 'Active Max',
     'active_max': 'Active Max',
     'active_max_value': 'Active Max',
 
-    'Idle Std': ' Idle Std',
     'idle_std': 'Idle Std',
     'idle_stdev': 'Idle Std',
 
-    # Threat detection mappings
-    'protocol_type': 'protocol_type',
+    # Threat detection - alternative name variations
     'protocol': 'protocol_type',
     'proto': 'protocol_type',
 
-    'service': 'service',
     'service_type': 'service',
 
-    'flag': 'flag',
     'tcp_flags': 'flag',
     'flags': 'flag',
 
-    'src_bytes': 'src_bytes',
     'source_bytes': 'src_bytes',
 
-    'dst_bytes': 'dst_bytes',
     'dest_bytes': 'dst_bytes',
     'destination_bytes': 'dst_bytes',
 
-    'count': 'count',
     'packet_count': 'count',
     'connection_count': 'count',
 
-    'same_srv_rate': 'same_srv_rate',
     'same_service_rate': 'same_srv_rate',
 
-    'diff_srv_rate': 'diff_srv_rate',
     'diff_service_rate': 'diff_srv_rate',
     'srv_rate': 'diff_srv_rate',
 
-    'dst_host_srv_count': 'dst_host_srv_count',
     'destination_host_srv_count': 'dst_host_srv_count',
     'host_srv_count': 'dst_host_srv_count',
 
-    'dst_host_same_srv_rate': 'dst_host_same_srv_rate',
     'destination_host_same_srv_rate': 'dst_host_same_srv_rate',
     'host_same_srv_rate': 'dst_host_same_srv_rate',
 }
@@ -286,7 +230,7 @@ class DataPreprocessor:
                 # Try to find feature with slight variations (spaces, case, or mapped names)
                 found = False
                 for key in raw_data.keys():
-                    normalized = _normalize_header_name(key)
+                    normalized = self._normalize_header_name(key)
                     if normalized == feature_name:
                         features[feature_name] = self._convert_to_float(
                             raw_data[key], feature_name
@@ -340,6 +284,9 @@ class DataPreprocessor:
         Raises:
             ValueError: If data is invalid or features are missing
         """
+        # Normalize keys upfront so polluted headers match canonical feature names
+        raw_data = {self._normalize_header_name(k): v for k, v in raw_data.items()}
+
         # Auto-detect model type based on available features
         if model_type == "auto":
             model_type = self._detect_model_type(raw_data)
@@ -386,7 +333,7 @@ class DataPreprocessor:
                 # Try to find feature with slight variations (spaces, case, or mapped names)
                 found = False
                 for key in raw_data.keys():
-                    normalized = _normalize_header_name(key)
+                    normalized = self._normalize_header_name(key)
                     if normalized == feature_name:
                         value = raw_data[key]
                         # Convert to float
@@ -430,7 +377,7 @@ class DataPreprocessor:
                 # Try to find feature with slight variations (spaces, case, or mapped names)
                 found = False
                 for key in raw_data.keys():
-                    normalized = _normalize_header_name(key)
+                    normalized = self._normalize_header_name(key)
                     if normalized == feature_name:
                         features[feature_name] = self._convert_to_float(
                             raw_data[key], feature_name
@@ -453,10 +400,10 @@ class DataPreprocessor:
     def _convert_to_float(self, value: Any, feature_name: str) -> float:
         """Convert value to float with error handling."""
         try:
-            # Handle inf and -inf values
+            # Handle inf, -inf, and NaN values
             float_value = float(value)
-            if np.isinf(float_value):
-                return 0.0  # Replace inf with 0
+            if np.isinf(float_value) or np.isnan(float_value):
+                return 0.0  # Replace inf/NaN with 0
             return float_value
         except (TypeError, ValueError):
             raise ValueError(
@@ -469,7 +416,7 @@ class DataPreprocessor:
         # Rate features should be between 0 and 1
         rate_features = [
             'same_srv_rate', 'diff_srv_rate',
-            'dst_host_same_srv_rate', 'dst_host_same_src_port_rate'
+            'dst_host_same_srv_rate'
         ]
 
         for feature in rate_features:
@@ -491,10 +438,10 @@ class DataPreprocessor:
     def _validate_attack_classification_ranges(self, features: Dict[str, float]) -> None:
         """Validate that attack classification features are in expected ranges."""
         # Port should be 0-65535
-        if not (0 <= features[' Destination Port'] <= 65535):
+        if not (0 <= features['Destination Port'] <= 65535):
             raise ValueError(
                 f"Destination Port must be between 0 and 65535, "
-                f"got {features[' Destination Port']}"
+                f"got {features['Destination Port']}"
             )
 
         # Most features should be non-negative (except ratios)
@@ -540,6 +487,10 @@ class DataPreprocessor:
         """
         processed_rows = []
 
+        # Normalize column names early: strip whitespace and apply header mappings
+        # so polluted CSV headers (e.g., ' Destination Port') become clean names
+        df.columns = [self._normalize_header_name(col) for col in df.columns]
+
         # Auto-detect from first row
         first_row = df.iloc[0].to_dict()
         _, detected_model_type = self.validate_and_extract_features(
@@ -563,6 +514,7 @@ class DataPreprocessor:
     def generate_sample_threat_detection_data(self) -> Dict[str, float]:
         """Generate sample data for threat detection model (for testing)."""
         return {
+            'protocol_type': 1,
             'service': 5,
             'flag': 2,
             'src_bytes': 1500,
@@ -572,52 +524,51 @@ class DataPreprocessor:
             'diff_srv_rate': 0.1,
             'dst_host_srv_count': 50,
             'dst_host_same_srv_rate': 0.75,
-            'dst_host_same_src_port_rate': 0.9
         }
 
     def generate_sample_attack_classification_data(self) -> Dict[str, float]:
         """Generate sample data for attack classification model (for testing)."""
         return {
-            ' Destination Port': 80,
-            ' Flow Duration': 5000,
-            ' Total Fwd Packets': 50,
+            'Destination Port': 80,
+            'Flow Duration': 5000,
+            'Total Fwd Packets': 50,
             'Total Length of Fwd Packets': 5000,
-            ' Fwd Packet Length Max': 1500,
-            ' Fwd Packet Length Min': 60,
+            'Fwd Packet Length Max': 1500,
+            'Fwd Packet Length Min': 60,
             'Bwd Packet Length Max': 1500,
-            ' Bwd Packet Length Min': 60,
+            'Bwd Packet Length Min': 60,
             'Flow Bytes/s': 1000,
-            ' Flow Packets/s': 10,
-            ' Flow IAT Mean': 100,
-            ' Flow IAT Std': 50,
-            ' Flow IAT Min': 10,
+            'Flow Packets/s': 10,
+            'Flow IAT Mean': 100,
+            'Flow IAT Std': 50,
+            'Flow IAT Min': 10,
             'Bwd IAT Total': 500,
-            ' Bwd IAT Std': 25,
+            'Bwd IAT Std': 25,
             'Fwd PSH Flags': 1,
-            ' Bwd PSH Flags': 1,
-            ' Fwd URG Flags': 0,
-            ' Bwd URG Flags': 0,
-            ' Fwd Header Length': 200,
-            ' Bwd Header Length': 200,
-            ' Bwd Packets/s': 5,
-            ' Min Packet Length': 60,
+            'Bwd PSH Flags': 1,
+            'Fwd URG Flags': 0,
+            'Bwd URG Flags': 0,
+            'Fwd Header Length': 200,
+            'Bwd Header Length': 200,
+            'Bwd Packets/s': 5,
+            'Min Packet Length': 60,
             'FIN Flag Count': 1,
-            ' RST Flag Count': 0,
-            ' PSH Flag Count': 2,
-            ' ACK Flag Count': 10,
-            ' URG Flag Count': 0,
-            ' Down/Up Ratio': 0.5,
+            'RST Flag Count': 0,
+            'PSH Flag Count': 2,
+            'ACK Flag Count': 10,
+            'URG Flag Count': 0,
+            'Down/Up Ratio': 0.5,
             'Fwd Avg Bytes/Bulk': 500,
-            ' Fwd Avg Packets/Bulk': 5,
-            ' Fwd Avg Bulk Rate': 100,
-            ' Bwd Avg Bytes/Bulk': 500,
-            ' Bwd Avg Packets/Bulk': 5,
+            'Fwd Avg Packets/Bulk': 5,
+            'Fwd Avg Bulk Rate': 100,
+            'Bwd Avg Bytes/Bulk': 500,
+            'Bwd Avg Packets/Bulk': 5,
             'Bwd Avg Bulk Rate': 100,
             'Init_Win_bytes_forward': 8192,
-            ' Init_Win_bytes_backward': 8192,
-            ' min_seg_size_forward': 20,
+            'Init_Win_bytes_backward': 8192,
+            'min_seg_size_forward': 20,
             'Active Mean': 100,
-            ' Active Std': 50,
-            ' Active Max': 200,
-            ' Idle Std': 25
+            'Active Std': 50,
+            'Active Max': 200,
+            'Idle Std': 25
         }

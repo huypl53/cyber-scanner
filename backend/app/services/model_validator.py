@@ -1,12 +1,22 @@
 """
 Model validation service for uploaded ML models.
 Validates file format, architecture, and performs test predictions.
+
+Supports:
+- Raw sklearn models (.pkl, .joblib)
+- Pipeline bundles from ml_models package (.joblib)
+- Keras/TensorFlow models (.h5)
 """
 import os
+import sys
+import logging
 import joblib
 import numpy as np
+import pandas as pd
 from typing import Dict, Any, Tuple
 import tempfile
+
+logger = logging.getLogger(__name__)
 
 
 class ModelValidationError(Exception):
@@ -20,7 +30,7 @@ class ModelValidator:
 
     Supports:
     - .pkl (Python pickle)
-    - .joblib (scikit-learn joblib)
+    - .joblib (scikit-learn joblib) — including pipeline bundles
     - .h5 (Keras/TensorFlow)
     """
 
@@ -28,25 +38,6 @@ class ModelValidator:
     EXPECTED_SHAPES = {
         'threat_detector': 10,  # 10 features for threat detection
         'attack_classifier': 42  # 42 features for attack classification
-    }
-
-    # Test data for validation predictions
-    TEST_DATA = {
-        'threat_detector': np.array([[
-            0.5, 0.5, 1024.0, 2048.0, 10.0,  # service, flag, src_bytes, dst_bytes, count
-            0.8, 0.2, 50.0, 0.9, 0.1          # same_srv_rate, diff_srv_rate, dst_host_srv_count, etc.
-        ]]),
-        'attack_classifier': np.array([[
-            80.0, 1000.0, 500.0, 500.0, 10.0,  # Port, flow duration, fwd/bwd packets
-            5000.0, 5000.0, 500.0, 500.0, 1000.0,  # Packet lengths and totals
-            0.0, 0.0, 0.0, 0.0, 0.0,  # TCP flags
-            100.0, 100.0, 50.0, 50.0, 25.0,  # Packet rates
-            0.0, 0.0, 0.0, 0.0, 0.0,  # More flags
-            1.0, 2.0, 3.0, 4.0, 5.0,  # Flow metrics
-            6.0, 7.0, 8.0, 9.0, 10.0,  # Additional metrics
-            11.0, 12.0, 13.0, 14.0, 15.0,  # More metrics
-            16.0, 17.0  # Final metrics
-        ]])
     }
 
     def __init__(self):
@@ -165,19 +156,76 @@ class ModelValidator:
             )
 
     def _load_model(self, file_path: str, file_format: str) -> Any:
-        """Load the model from file based on format."""
+        """
+        Load the model from file based on format.
+
+        For .joblib/.pkl files, detects pipeline bundle format from the ml_models
+        package and uses the appropriate pipeline loader. This handles the
+        PreprocessArtifacts class deserialization issue.
+        """
         try:
             if file_format in ['.pkl', '.joblib']:
-                model = joblib.load(file_path)
+                return self._load_pkl_or_joblib(file_path)
             elif file_format == '.h5':
                 model = self.keras.models.load_model(file_path)
+                return model
             else:
                 raise ModelValidationError(f"Unsupported format: {file_format}")
 
-            return model
-
+        except ModelValidationError:
+            raise
         except Exception as e:
             raise ModelValidationError(f"Failed to load model: {str(e)}")
+
+    def _load_pkl_or_joblib(self, file_path: str) -> Any:
+        """
+        Load a .pkl or .joblib file, handling pipeline bundle formats.
+
+        Tries in order:
+        1. ThreatDetectionPipeline.load_from_bundle (for threat detector bundles)
+        2. AttackClassificationPipeline.load_from_bundle (for attack classifier bundles)
+        3. Plain joblib.load (for raw sklearn models)
+        """
+        # Try attack classifier pipeline first (no TensorFlow needed)
+        try:
+            from ml_models import AttackClassificationPipeline
+            pipeline = AttackClassificationPipeline.load_from_bundle(file_path)
+            logger.info("Loaded as AttackClassificationPipeline bundle")
+            return pipeline
+        except Exception:
+            pass
+
+        # Try threat detection pipeline (requires TensorFlow)
+        try:
+            from ml_models import ThreatDetectionPipeline
+            pipeline = ThreatDetectionPipeline.load_from_bundle(file_path)
+            logger.info("Loaded as ThreatDetectionPipeline bundle")
+            return pipeline
+        except ImportError:
+            # TensorFlow not available — only raise if the file is actually a threat
+            # bundle. Otherwise fall through to the plain joblib path below.
+            logger.debug("ThreatDetectionPipeline unavailable (no TensorFlow), skipping")
+        except Exception as e:
+            # Check if the error is related to PreprocessArtifacts (TF model without TF)
+            if 'PreprocessArtifacts' in str(e):
+                raise ModelValidationError(
+                    "This model is a ThreatDetectionPipeline bundle containing "
+                    "PreprocessArtifacts which requires TensorFlow. "
+                    "Install TensorFlow to support this model format."
+                )
+            pass
+
+        # Fall back to plain joblib load
+        try:
+            model = joblib.load(file_path)
+            return model
+        except Exception as e:
+            raise ModelValidationError(f"Failed to load model: {str(e)}")
+
+    def _is_pipeline(self, model: Any) -> bool:
+        """Check if the model is a pipeline object from the ml_models package."""
+        type_name = type(model).__name__
+        return type_name in ('ThreatDetectionPipeline', 'AttackClassificationPipeline')
 
     def _validate_architecture(
         self,
@@ -200,7 +248,28 @@ class ModelValidator:
         }
 
         try:
-            if file_format == '.h5':
+            if self._is_pipeline(model):
+                # Pipeline from ml_models package — has internal preprocessing
+                metadata['model_format'] = 'pipeline_bundle'
+                if hasattr(model, 'artifacts') and model.artifacts is not None:
+                    if hasattr(model.artifacts, 'selected_features'):
+                        actual = len(model.artifacts.selected_features)
+                        metadata['actual_input_features'] = int(actual)
+                    elif hasattr(model.artifacts, 'feature_columns'):
+                        actual = len(model.artifacts.feature_columns)
+                        metadata['actual_input_features'] = int(actual)
+                    else:
+                        metadata['actual_input_features'] = 'unknown (pipeline with custom artifacts)'
+                else:
+                    metadata['actual_input_features'] = 'unknown (pipeline without artifacts)'
+
+                # Check for inner model metadata
+                if hasattr(model, 'model') and hasattr(model.model, 'classes_'):
+                    metadata['num_classes'] = int(len(model.model.classes_))
+                elif hasattr(model, 'model_ann'):
+                    metadata['model_format'] = 'ensemble_pipeline_bundle'
+
+            elif file_format == '.h5':
                 # Keras model - check input shape
                 input_shape = model.input_shape
                 if isinstance(input_shape, list):
@@ -233,7 +302,7 @@ class ModelValidator:
                     # Model doesn't expose feature count, will validate during test prediction
                     metadata['actual_input_features'] = 'unknown (will validate during test prediction)'
 
-            # Get additional metadata
+            # Get additional metadata for raw sklearn models
             if hasattr(model, 'classes_'):
                 metadata['num_classes'] = int(len(model.classes_))
                 metadata['classes'] = [c.item() if hasattr(c, "item") else c for c in model.classes_]
@@ -253,15 +322,19 @@ class ModelValidator:
         profile_config: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Run a test prediction to ensure model works correctly."""
-        # Generate test data based on expected features
-        num_features = len(profile_config.get('expected_features', []))
+        feature_names = profile_config.get('expected_features', [])
+        num_features = len(feature_names)
         if num_features == 0:
             raise ModelValidationError("Cannot generate test data: no expected_features in profile")
 
-        # Generate random test data
-        test_data = np.random.randn(1, num_features).astype(np.float32)
-
         try:
+            # Pipeline objects expect DataFrames and handle their own preprocessing
+            if self._is_pipeline(model):
+                return self._test_pipeline_prediction(model, model_type, feature_names)
+
+            # Generate random test data as numpy array
+            test_data = np.random.randn(1, num_features).astype(np.float32)
+
             if file_format == '.h5':
                 # Keras model - use predict()
                 prediction = model.predict(test_data, verbose=0)
@@ -304,8 +377,60 @@ class ModelValidator:
 
             return result
 
+        except ModelValidationError:
+            raise
         except Exception as e:
             raise ModelValidationError(f"Test prediction failed: {str(e)}")
+
+    def _test_pipeline_prediction(
+        self,
+        pipeline: Any,
+        model_type: str,
+        feature_names: list
+    ) -> Dict[str, Any]:
+        """
+        Run a test prediction on a pipeline bundle from the ml_models package.
+        Pipelines expect DataFrames and handle their own preprocessing internally.
+        """
+        type_name = type(pipeline).__name__
+
+        if type_name == 'ThreatDetectionPipeline':
+            # Use the pipeline's own selected features for test data
+            if pipeline.artifacts and hasattr(pipeline.artifacts, 'selected_features'):
+                test_features = list(pipeline.artifacts.selected_features)
+            else:
+                test_features = feature_names
+            test_row = {name: np.random.uniform(0, 100) for name in test_features}
+            test_df = pd.DataFrame([test_row])
+
+            preds, prob_ensemble, prob_ann = pipeline.predict(test_df)
+            return {
+                'prediction_type': 'threat_detection_pipeline',
+                'predicted_class': int(preds[0]),
+                'ensemble_probability': float(prob_ensemble[0]),
+                'ann_probability': float(prob_ann[0]),
+                'is_attack': bool(preds[0]),
+            }
+
+        elif type_name == 'AttackClassificationPipeline':
+            # Use the pipeline's own feature columns for test data
+            if pipeline.artifacts and hasattr(pipeline.artifacts, 'feature_columns'):
+                test_features = list(pipeline.artifacts.feature_columns)
+            else:
+                test_features = feature_names
+            test_row = {name: np.random.uniform(0, 100) for name in test_features}
+            test_df = pd.DataFrame([test_row])
+
+            predicted_encoded, confidence, predicted_labels = pipeline.predict(test_df)
+            return {
+                'prediction_type': 'attack_classification_pipeline',
+                'predicted_class': int(predicted_encoded[0]),
+                'predicted_label': str(predicted_labels[0]),
+                'confidence': float(confidence[0]),
+            }
+
+        else:
+            raise ModelValidationError(f"Unknown pipeline type: {type_name}")
 
     @staticmethod
     def get_supported_formats() -> list:
