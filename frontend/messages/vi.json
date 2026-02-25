@@ -301,7 +301,13 @@
         "removed": "Đã xóa IP {ip} khỏi danh sách cho phép",
         "statusUpdated": "Đã cập nhật trạng thái IP"
       },
-      "confirmDelete": "Bạn có chắc chắn muốn xóa {ip} khỏi danh sách cho phép?"
+      "confirmDelete": "Bạn có chắc chắn muốn xóa {ip} khỏi danh sách cho phép?",
+      "deleteDialog": {
+        "title": "Xóa Địa Chỉ IP",
+        "description": "Bạn có chắc chắn muốn xóa {ip} khỏi danh sách cho phép? Hành động này không thể hoàn tác.",
+        "cancel": "Hủy",
+        "confirm": "Xóa"
+      }
     }
   },
   "common": {

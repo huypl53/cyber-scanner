@@ -301,7 +301,13 @@
         "removed": "IP {ip} removed from whitelist",
         "statusUpdated": "IP status updated"
       },
-      "confirmDelete": "Are you sure you want to remove {ip} from the whitelist?"
+      "confirmDelete": "Are you sure you want to remove {ip} from the whitelist?",
+      "deleteDialog": {
+        "title": "Delete IP Address",
+        "description": "Are you sure you want to remove {ip} from the whitelist? This action cannot be undone.",
+        "cancel": "Cancel",
+        "confirm": "Delete"
+      }
     }
   },
   "common": {

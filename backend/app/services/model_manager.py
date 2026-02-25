@@ -31,7 +31,7 @@ class ModelManager:
     - Support for multiple model types (threat_detector, attack_classifier)
     """
 
-    def __init__(self, models_directory: str = "/mnt/Code/code/freelance/2511-AI-heal-network-sec/ui/backend/models"):
+    def __init__(self, models_directory: str = os.environ.get("MODELS_DIRECTORY", os.path.join(os.path.dirname(__file__), "..", "..", "models"))):
         """
         Initialize the model manager.
 

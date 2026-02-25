@@ -205,6 +205,7 @@ class ExternalKafkaConsumerService:
                     # Check if still enabled (can be disabled at runtime)
                     if not self.is_enabled():
                         logger.info("External Kafka consumer disabled. Stopping consumption.")
+                        self.running = False
                         break
 
                     # Run the blocking poll() call in a thread pool executor

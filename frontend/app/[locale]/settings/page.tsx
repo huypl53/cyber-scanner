@@ -12,6 +12,16 @@ import {
   DataSourceConfig,
   IPWhitelist,
 } from '@/lib/api';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export default function SettingsPage() {
   const t = useTranslations('settings');
@@ -29,6 +39,9 @@ export default function SettingsPage() {
   const [newIPDescription, setNewIPDescription] = useState('');
   const [formError, setFormError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+
+  // Delete confirmation state
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: number; ipAddress: string } | null>(null);
 
   useEffect(() => {
     loadSettings();
@@ -117,20 +130,24 @@ export default function SettingsPage() {
     }
   };
 
-  const handleDeleteIP = async (ipId: number, ipAddress: string) => {
-    if (!confirm(t('ipWhitelist.confirmDelete', { ip: ipAddress }))) {
-      return;
-    }
+  const handleDeleteIP = (ipId: number, ipAddress: string) => {
+    setDeleteConfirm({ id: ipId, ipAddress });
+  };
+
+  const confirmDeleteIP = async () => {
+    if (!deleteConfirm) return;
 
     try {
-      await deleteIP(ipId);
-      setSuccessMessage(t('ipWhitelist.success.removed', { ip: ipAddress }));
+      await deleteIP(deleteConfirm.id);
+      setSuccessMessage(t('ipWhitelist.success.removed', { ip: deleteConfirm.ipAddress }));
       setTimeout(() => setSuccessMessage(''), 3000);
+      setDeleteConfirm(null);
       await loadSettings();
     } catch (error) {
       console.error('Error deleting IP:', error);
       setFormError(t('ipWhitelist.errors.deleteFailed'));
       setTimeout(() => setFormError(''), 3000);
+      setDeleteConfirm(null);
     }
   };
 
@@ -324,6 +341,26 @@ export default function SettingsPage() {
           </div>
         )}
       </section>
+
+      <AlertDialog open={deleteConfirm !== null} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('ipWhitelist.deleteDialog.title')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('ipWhitelist.deleteDialog.description', { ip: deleteConfirm?.ipAddress || '' })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('ipWhitelist.deleteDialog.cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteIP}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t('ipWhitelist.deleteDialog.confirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
