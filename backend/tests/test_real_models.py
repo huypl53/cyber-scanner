@@ -7,10 +7,13 @@ import numpy as np
 import time
 from pathlib import Path
 
-from app.models.ml_models import (
-    get_ensemble_model,
-    get_decision_tree_model,
+from app.models.model_loaders import (
+    get_threat_pipeline,
+    get_attack_pipeline,
     reload_models,
+    predict_threat,
+    predict_attack_type,
+    get_model_version,
     THREAT_DETECTION_FEATURES,
     ATTACK_CLASSIFICATION_FEATURES
 )
@@ -20,39 +23,37 @@ class TestThreatDetectionModel:
     """Test suite for threat detection model."""
 
     def test_model_loads(self):
-        """Test that threat detection model loads successfully."""
-        model = get_ensemble_model()
-        assert model is not None
-        assert model.model is not None
-        assert model.scaler is not None
+        """Test that threat detection pipeline loads successfully."""
+        pipeline = get_threat_pipeline()
+        assert pipeline is not None
+        assert pipeline.model_ann is not None
+        assert pipeline.model_lstm is not None
+        assert pipeline.artifacts is not None
 
     def test_model_version(self):
         """Test that model has version information."""
-        model = get_ensemble_model()
-        assert model.model_version is not None
-        assert isinstance(model.model_version, str)
-        print(f"Model version: {model.model_version}")
-        print(f"Is real model: {model.is_real_model}")
+        version = get_model_version("threat")
+        assert version is not None
+        assert isinstance(version, str)
+        print(f"Model version: {version}")
 
     def test_prediction_normal_traffic(self):
         """Test prediction on normal traffic features."""
-        model = get_ensemble_model()
-
         # Normal traffic pattern
         features = {
-            'service': 5,
             'flag': 2,
             'src_bytes': 1500,
             'dst_bytes': 2000,
             'count': 10,
-            'same_srv_rate': 0.8,
             'diff_srv_rate': 0.1,
             'dst_host_srv_count': 50,
             'dst_host_same_srv_rate': 0.75,
-            'dst_host_same_src_port_rate': 0.9
+            'dst_host_diff_srv_rate': 0.1,
+            'dst_host_same_src_port_rate': 0.9,
+            'dst_host_srv_diff_host_rate': 0.1
         }
 
-        score, is_attack = model.predict(features)
+        score, is_attack = predict_threat(features)
 
         assert isinstance(score, float)
         assert 0.0 <= score <= 1.0
@@ -61,23 +62,21 @@ class TestThreatDetectionModel:
 
     def test_prediction_attack_traffic(self):
         """Test prediction on suspicious traffic features."""
-        model = get_ensemble_model()
-
         # Suspicious traffic pattern
         features = {
-            'service': 10,
             'flag': 4,
             'src_bytes': 50000,
             'dst_bytes': 10000,
             'count': 500,
-            'same_srv_rate': 0.1,
             'diff_srv_rate': 0.8,
             'dst_host_srv_count': 255,
             'dst_host_same_srv_rate': 0.2,
-            'dst_host_same_src_port_rate': 0.1
+            'dst_host_diff_srv_rate': 0.8,
+            'dst_host_same_src_port_rate': 0.1,
+            'dst_host_srv_diff_host_rate': 0.8
         }
 
-        score, is_attack = model.predict(features)
+        score, is_attack = predict_threat(features)
 
         assert isinstance(score, float)
         assert 0.0 <= score <= 1.0
@@ -86,53 +85,44 @@ class TestThreatDetectionModel:
 
     def test_missing_features(self):
         """Test that missing features raise appropriate error."""
-        model = get_ensemble_model()
-
         # Missing required features
-        features = {
-            'service': 5,
-            'flag': 2
-        }
+        features = {'flag': 2}
 
         with pytest.raises(ValueError, match="Missing required features"):
-            model.predict(features)
+            predict_threat(features)
 
     def test_feature_validation(self):
         """Test feature validation logic."""
-        model = get_ensemble_model()
-
         # All features present
         features = {f: 0.5 for f in THREAT_DETECTION_FEATURES}
-        score, is_attack = model.predict(features)
+        score, is_attack = predict_threat(features)
 
         assert isinstance(score, float)
         assert isinstance(is_attack, bool)
 
     def test_prediction_latency(self):
         """Test prediction latency is within acceptable range."""
-        model = get_ensemble_model()
-
         features = {
-            'service': 5,
             'flag': 2,
             'src_bytes': 1500,
             'dst_bytes': 2000,
             'count': 10,
-            'same_srv_rate': 0.8,
             'diff_srv_rate': 0.1,
             'dst_host_srv_count': 50,
             'dst_host_same_srv_rate': 0.75,
-            'dst_host_same_src_port_rate': 0.9
+            'dst_host_diff_srv_rate': 0.1,
+            'dst_host_same_src_port_rate': 0.9,
+            'dst_host_srv_diff_host_rate': 0.1
         }
 
         # Warm-up
-        model.predict(features)
+        predict_threat(features)
 
         # Measure latency over 100 predictions
         latencies = []
         for _ in range(100):
             start = time.perf_counter()
-            model.predict(features)
+            predict_threat(features)
             end = time.perf_counter()
             latencies.append((end - start) * 1000)  # Convert to ms
 
@@ -153,24 +143,21 @@ class TestAttackClassificationModel:
     """Test suite for attack classification model."""
 
     def test_model_loads(self):
-        """Test that attack classification model loads successfully."""
-        model = get_decision_tree_model()
-        assert model is not None
-        assert model.model is not None
-        assert model.scaler is not None
+        """Test that attack classification pipeline loads successfully."""
+        pipeline = get_attack_pipeline()
+        assert pipeline is not None
+        assert pipeline.model is not None
+        assert pipeline.artifacts is not None
 
     def test_model_version(self):
         """Test that model has version information."""
-        model = get_decision_tree_model()
-        assert model.model_version is not None
-        assert isinstance(model.model_version, str)
-        print(f"Model version: {model.model_version}")
-        print(f"Is real model: {model.is_real_model}")
+        version = get_model_version("attack")
+        assert version is not None
+        assert isinstance(version, str)
+        print(f"Model version: {version}")
 
     def test_prediction_benign_traffic(self):
         """Test prediction on benign traffic."""
-        model = get_decision_tree_model()
-
         # Benign traffic pattern
         features = {
             ' Destination Port': 80,
@@ -217,7 +204,7 @@ class TestAttackClassificationModel:
             ' Idle Std': 25
         }
 
-        attack_type, attack_name, confidence = model.predict(features)
+        attack_type, attack_name, confidence = predict_attack_type(features)
 
         assert isinstance(attack_type, int)
         assert 0 <= attack_type <= 13
@@ -228,8 +215,6 @@ class TestAttackClassificationModel:
 
     def test_prediction_ddos_pattern(self):
         """Test prediction on DDoS-like pattern."""
-        model = get_decision_tree_model()
-
         # DDoS pattern (high packet rate)
         features = {
             ' Destination Port': 80,
@@ -276,7 +261,7 @@ class TestAttackClassificationModel:
             ' Idle Std': 1
         }
 
-        attack_type, attack_name, confidence = model.predict(features)
+        attack_type, attack_name, confidence = predict_attack_type(features)
 
         assert isinstance(attack_type, int)
         assert isinstance(attack_name, str)
@@ -285,18 +270,14 @@ class TestAttackClassificationModel:
 
     def test_missing_features(self):
         """Test that missing features raise appropriate error."""
-        model = get_decision_tree_model()
-
         # Missing required features
         features = {' Destination Port': 80}
 
         with pytest.raises(ValueError, match="Missing required features"):
-            model.predict(features)
+            predict_attack_type(features)
 
     def test_all_attack_types(self):
         """Test that model can predict various attack types."""
-        model = get_decision_tree_model()
-
         # Generate random features
         np.random.seed(42)
         predictions = set()
@@ -347,7 +328,7 @@ class TestAttackClassificationModel:
                 ' Idle Std': np.random.rand() * 500
             }
 
-            attack_type, attack_name, confidence = model.predict(features)
+            attack_type, attack_name, confidence = predict_attack_type(features)
             predictions.add(attack_name)
 
         print(f"\nUnique attack types predicted: {len(predictions)}")
@@ -358,8 +339,6 @@ class TestAttackClassificationModel:
 
     def test_prediction_latency(self):
         """Test prediction latency is within acceptable range."""
-        model = get_decision_tree_model()
-
         features = {
             ' Destination Port': 80,
             ' Flow Duration': 5000,
@@ -406,13 +385,13 @@ class TestAttackClassificationModel:
         }
 
         # Warm-up
-        model.predict(features)
+        predict_attack_type(features)
 
         # Measure latency over 100 predictions
         latencies = []
         for _ in range(100):
             start = time.perf_counter()
-            model.predict(features)
+            predict_attack_type(features)
             end = time.perf_counter()
             latencies.append((end - start) * 1000)  # Convert to ms
 
@@ -434,30 +413,30 @@ class TestModelManagement:
 
     def test_model_reload(self):
         """Test that models can be reloaded."""
-        # Get initial models
-        model1 = get_ensemble_model()
-        model2 = get_decision_tree_model()
+        # Get initial pipelines
+        pipeline1 = get_threat_pipeline()
+        pipeline2 = get_attack_pipeline()
 
         # Reload models
         reload_models()
 
         # Get new instances
-        model3 = get_ensemble_model()
-        model4 = get_decision_tree_model()
+        pipeline3 = get_threat_pipeline()
+        pipeline4 = get_attack_pipeline()
 
         # Should be new instances
-        assert model3 is not model1
-        assert model4 is not model2
+        assert pipeline3 is not pipeline1
+        assert pipeline4 is not pipeline2
 
     def test_singleton_pattern(self):
         """Test that models use singleton pattern."""
-        model1 = get_ensemble_model()
-        model2 = get_ensemble_model()
+        pipeline1 = get_threat_pipeline()
+        pipeline2 = get_threat_pipeline()
 
-        assert model1 is model2
+        assert pipeline1 is pipeline2
 
-        tree1 = get_decision_tree_model()
-        tree2 = get_decision_tree_model()
+        tree1 = get_attack_pipeline()
+        tree2 = get_attack_pipeline()
 
         assert tree1 is tree2
 

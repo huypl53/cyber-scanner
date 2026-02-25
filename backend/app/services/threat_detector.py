@@ -4,7 +4,7 @@ Performs binary classification: Normal vs Attack.
 """
 from typing import Dict, Tuple
 from sqlalchemy.orm import Session
-from app.models.ml_models import get_ensemble_model
+from app.models.model_loaders import predict_threat, get_model_version, get_threshold
 from app.models.database import TrafficData, ThreatPrediction
 from datetime import datetime
 
@@ -12,8 +12,7 @@ from datetime import datetime
 class ThreatDetectorService:
     """Service for detecting threats using the ensemble model."""
 
-    def __init__(self):
-        self.model = get_ensemble_model()
+    # No init needed - models are loaded lazily with singleton caching
 
     def predict(
         self,
@@ -32,16 +31,16 @@ class ThreatDetectorService:
         Returns:
             ThreatPrediction database object
         """
-        # Get prediction from ensemble model
-        score, is_attack = self.model.predict(features)
+        # Get prediction from threat detection pipeline
+        score, is_attack = predict_threat(features)
 
         # Create prediction record
         prediction = ThreatPrediction(
             traffic_data_id=traffic_data_id,
             prediction_score=score,
             is_attack=is_attack,
-            threshold=self.model.threshold,
-            model_version=self.model.model_version
+            threshold=get_threshold(),
+            model_version=get_model_version("threat")
         )
 
         # Save to database
@@ -69,16 +68,18 @@ class ThreatDetectorService:
             List of ThreatPrediction objects
         """
         predictions = []
+        threshold = get_threshold()
+        model_version = get_model_version("threat")
 
         for features, traffic_id in zip(features_list, traffic_data_ids):
-            score, is_attack = self.model.predict(features)
+            score, is_attack = predict_threat(features)
 
             prediction = ThreatPrediction(
                 traffic_data_id=traffic_id,
                 prediction_score=score,
                 is_attack=is_attack,
-                threshold=self.model.threshold,
-                model_version=self.model.model_version
+                threshold=threshold,
+                model_version=model_version
             )
             predictions.append(prediction)
 
