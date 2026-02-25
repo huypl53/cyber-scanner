@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Terminal, AlertTriangle, Shield, Zap } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface LogEntry {
   timestamp: string;
@@ -26,11 +26,21 @@ interface TerminalLogProps {
 export function TerminalLog({ entries, maxHeight = '600px' }: TerminalLogProps) {
   const t = useTranslations('realtime.feed');
   const locale = useLocale();
-  const logEndRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isNearBottom, setIsNearBottom] = useState(true);
+
+  const handleScroll = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    setIsNearBottom(el.scrollHeight - el.scrollTop - el.clientHeight < 50);
+  }, []);
 
   useEffect(() => {
-    logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [entries]);
+    const el = containerRef.current;
+    if (el && isNearBottom) {
+      el.scrollTop = el.scrollHeight;
+    }
+  }, [entries, isNearBottom]);
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -87,6 +97,8 @@ export function TerminalLog({ entries, maxHeight = '600px' }: TerminalLogProps) 
       </CardHeader>
       <CardContent className="p-0">
         <div
+          ref={containerRef}
+          onScroll={handleScroll}
           className="overflow-y-auto font-mono text-xs terminal-text bg-terminal-bg"
           style={{ maxHeight }}
         >
@@ -159,7 +171,7 @@ export function TerminalLog({ entries, maxHeight = '600px' }: TerminalLogProps) 
                   )}
                 </div>
               ))}
-              <div ref={logEndRef} />
+              <div />
             </div>
           )}
         </div>

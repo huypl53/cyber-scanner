@@ -161,6 +161,12 @@ export const startTestStream = async (config: {
   return response.data;
 };
 
+// Stop test data stream
+export const stopTestStream = async () => {
+  const response = await api.post('/api/v1/test/stop-stream');
+  return response.data;
+};
+
 // ========== Data Source Configuration API ==========
 
 // Get all data sources

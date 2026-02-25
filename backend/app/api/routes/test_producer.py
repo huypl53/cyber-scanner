@@ -56,6 +56,18 @@ async def start_test_stream(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/test/stop-stream")
+async def stop_test_stream():
+    """Stop the currently running test data stream."""
+    try:
+        producer = get_producer_service()
+        producer.stop_stream()
+        return {"message": "Stream stop requested"}
+    except Exception as e:
+        logger.error(f"Error stopping test stream: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/test/send-single")
 async def send_single_test_message(model_type: str = "attack_classification"):
     """

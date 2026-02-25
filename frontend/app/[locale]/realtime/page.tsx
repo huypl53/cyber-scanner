@@ -3,7 +3,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useWebSocket } from '@/hooks/useWebSocket';
-import { startTestStream } from '@/lib/api';
+import { startTestStream, stopTestStream } from '@/lib/api';
 import { StatCard } from '@/components/StatCard';
 import { TerminalLog } from '@/components/TerminalLog';
 import { ThroughputGraph } from '@/components/ThroughputGraph';
@@ -16,7 +16,7 @@ import {
   AlertTriangle,
   Zap,
   Play,
-  Pause,
+  Square,
   Wifi,
   WifiOff,
 } from 'lucide-react';
@@ -90,18 +90,27 @@ export default function RealtimePage() {
     return () => clearInterval(interval);
   }, [predictions]);
 
-  const handleStartStream = async () => {
-    try {
-      setStreamActive(true);
-      await startTestStream({
-        count: 100,
-        interval: 1.0,
-        model_type: 'attack_classification',
-      });
-    } catch (error) {
-      console.error('Failed to start stream:', error);
-    } finally {
-      setTimeout(() => setStreamActive(false), 5000);
+  const handleToggleStream = async () => {
+    if (streamActive) {
+      try {
+        await stopTestStream();
+      } catch (error) {
+        console.error('Failed to stop stream:', error);
+      } finally {
+        setStreamActive(false);
+      }
+    } else {
+      try {
+        setStreamActive(true);
+        await startTestStream({
+          count: 100,
+          interval: 1.0,
+          model_type: 'attack_classification',
+        });
+      } catch (error) {
+        console.error('Failed to start stream:', error);
+        setStreamActive(false);
+      }
     }
   };
 
@@ -189,8 +198,9 @@ export default function RealtimePage() {
 
           {/* Start/Stop Stream Button */}
           <Button
-            onClick={handleStartStream}
-            disabled={streamActive || !isConnected}
+            onClick={handleToggleStream}
+            disabled={!isConnected}
+            variant={streamActive ? 'destructive' : 'default'}
             className={cn(
               'shadow-glow',
               streamActive && 'animate-pulse-glow'
@@ -198,8 +208,8 @@ export default function RealtimePage() {
           >
             {streamActive ? (
               <>
-                <Pause className="h-4 w-4 mr-2 animate-pulse" />
-                {t('streamActive')}
+                <Square className="h-4 w-4 mr-2" />
+                {t('stopStream')}
               </>
             ) : (
               <>

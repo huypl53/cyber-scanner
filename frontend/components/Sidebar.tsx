@@ -97,7 +97,7 @@ export function Sidebar() {
         {navItems.map((item) => {
           const Icon = item.icon;
           const localizedHref = `/${locale}${item.href}`;
-          const isActive = pathname === localizedHref;
+          const isActive = pathname === localizedHref || pathname === localizedHref.replace(/\/$/, '');
 
           return (
             <Link key={item.href} href={localizedHref}>

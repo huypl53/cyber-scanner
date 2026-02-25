@@ -9,6 +9,7 @@ import json
 import logging
 import time
 import random
+import threading
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,7 @@ class KafkaProducerService:
         }
         self.producer = Producer(self.producer_config)
         self.preprocessor = DataPreprocessor()
+        self._stop_event = threading.Event()
 
     def delivery_callback(self, err, msg):
         """Callback for message delivery confirmation."""
@@ -78,12 +80,18 @@ class KafkaProducerService:
             interval: Time interval between messages (seconds)
             model_type: "threat_detection" or "attack_classification"
         """
+        self._stop_event.clear()
+
         logger.info(
             f"Starting test data stream: {count} messages, "
             f"{interval}s interval, type: {model_type}"
         )
 
         for i in range(count):
+            if self._stop_event.is_set():
+                logger.info(f"Stream stopped by user after {i} messages")
+                break
+
             # Generate sample data
             if model_type == "threat_detection":
                 data = self._generate_threat_detection_data()
@@ -95,13 +103,20 @@ class KafkaProducerService:
 
             logger.info(f"Sent test message {i + 1}/{count}")
 
-            # Wait before sending next message
-            time.sleep(interval)
+            # Wait before sending next message, checking stop flag
+            if self._stop_event.wait(timeout=interval):
+                logger.info(f"Stream stopped by user after {i + 1} messages")
+                break
 
         # Flush any remaining messages
         self.producer.flush()
 
         logger.info("Test data stream completed")
+
+    def stop_stream(self):
+        """Signal the running stream to stop."""
+        self._stop_event.set()
+        logger.info("Stream stop requested")
 
     def _generate_threat_detection_data(self) -> dict:
         """Generate random threat detection test data (10 features)."""

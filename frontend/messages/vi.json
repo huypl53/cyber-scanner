@@ -144,6 +144,7 @@
     "connected": "Đã Kết Nối",
     "disconnected": "Đã Ngắt Kết Nối",
     "startTestStream": "Bắt Đầu Luồng Kiểm Thử",
+    "stopStream": "Dừng Luồng",
     "streamActive": "Đang Phát Luồng...",
     "stats": {
       "eventsReceived": "Sự Kiện Nhận Được",
