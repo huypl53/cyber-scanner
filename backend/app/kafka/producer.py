@@ -121,15 +121,15 @@ class KafkaProducerService:
         base_data = self.preprocessor.generate_sample_attack_classification_data()
 
         # Add some randomness to make data more realistic
-        base_data[' Destination Port'] = random.choice([21, 22, 80, 443, 8080, 3306])
-        base_data[' Flow Duration'] = random.randint(1000, 100000)
-        base_data[' Total Fwd Packets'] = random.randint(1, 200)
+        base_data['Destination Port'] = random.choice([21, 22, 80, 443, 8080, 3306])
+        base_data['Flow Duration'] = random.randint(1000, 100000)
+        base_data['Total Fwd Packets'] = random.randint(1, 200)
         base_data['Flow Bytes/s'] = random.randint(100, 100000)
-        base_data[' Flow Packets/s'] = random.randint(1, 1000)
+        base_data['Flow Packets/s'] = random.randint(1, 1000)
         base_data['FIN Flag Count'] = random.randint(0, 5)
-        base_data[' RST Flag Count'] = random.randint(0, 5)
-        base_data[' PSH Flag Count'] = random.randint(0, 10)
-        base_data[' ACK Flag Count'] = random.randint(0, 50)
+        base_data['RST Flag Count'] = random.randint(0, 5)
+        base_data['PSH Flag Count'] = random.randint(0, 10)
+        base_data['ACK Flag Count'] = random.randint(0, 50)
 
         return base_data
 

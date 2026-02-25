@@ -105,7 +105,7 @@ def _build_csv_validation_error(
             "attack_classification": {
                 "description": "42 features for multi-class attack classification",
                 "example_header": attack_example,
-                "note": "Some headers have leading spaces, e.g., ' Destination Port'"
+                "note": "Headers should use clean names without leading spaces, e.g., 'Destination Port'"
             }
         },
         "help": {
@@ -238,6 +238,8 @@ async def upload_csv(
             predictions=predictions_response
         )
 
+    except HTTPException:
+        raise
     except pd.errors.ParserError:
         raise HTTPException(status_code=400, detail="Invalid CSV format")
     except Exception as e:

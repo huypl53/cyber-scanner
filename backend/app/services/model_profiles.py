@@ -6,11 +6,11 @@ from typing import Dict, List, Optional
 
 
 # Default threat detection profile (10 features, binary classification)
-# Updated to match actual trained model features
+# Must match model_loaders.THREAT_DETECTION_FEATURES and the trained model profile
 DEFAULT_THREAT_DETECTION_FEATURES = [
-    'flag', 'src_bytes', 'dst_bytes', 'count', 'diff_srv_rate',
-    'dst_host_srv_count', 'dst_host_same_srv_rate', 'dst_host_diff_srv_rate',
-    'dst_host_same_src_port_rate', 'dst_host_srv_diff_host_rate'
+    'protocol_type', 'service', 'flag', 'src_bytes', 'dst_bytes',
+    'count', 'same_srv_rate', 'diff_srv_rate', 'dst_host_srv_count',
+    'dst_host_same_srv_rate'
 ]
 
 DEFAULT_THREAT_DETECTION_CLASSES = [
@@ -21,20 +21,20 @@ DEFAULT_THREAT_DETECTION_CLASSES = [
 
 # Default attack classification profile (42 features, 14 attack classes)
 DEFAULT_ATTACK_CLASSIFICATION_FEATURES = [
-    ' Destination Port', ' Flow Duration', ' Total Fwd Packets',
-    'Total Length of Fwd Packets', ' Fwd Packet Length Max',
-    ' Fwd Packet Length Min', 'Bwd Packet Length Max',
-    ' Bwd Packet Length Min', 'Flow Bytes/s', ' Flow Packets/s',
-    ' Flow IAT Mean', ' Flow IAT Std', ' Flow IAT Min', 'Bwd IAT Total',
-    ' Bwd IAT Std', 'Fwd PSH Flags', ' Bwd PSH Flags', ' Fwd URG Flags',
-    ' Bwd URG Flags', ' Fwd Header Length', ' Bwd Header Length',
-    ' Bwd Packets/s', ' Min Packet Length', 'FIN Flag Count',
-    ' RST Flag Count', ' PSH Flag Count', ' ACK Flag Count',
-    ' URG Flag Count', ' Down/Up Ratio', 'Fwd Avg Bytes/Bulk',
-    ' Fwd Avg Packets/Bulk', ' Fwd Avg Bulk Rate', ' Bwd Avg Bytes/Bulk',
-    ' Bwd Avg Packets/Bulk', 'Bwd Avg Bulk Rate', 'Init_Win_bytes_forward',
-    ' Init_Win_bytes_backward', ' min_seg_size_forward', 'Active Mean',
-    ' Active Std', ' Active Max', ' Idle Std'
+    'Destination Port', 'Flow Duration', 'Total Fwd Packets',
+    'Total Length of Fwd Packets', 'Fwd Packet Length Max',
+    'Fwd Packet Length Min', 'Bwd Packet Length Max',
+    'Bwd Packet Length Min', 'Flow Bytes/s', 'Flow Packets/s',
+    'Flow IAT Mean', 'Flow IAT Std', 'Flow IAT Min', 'Bwd IAT Total',
+    'Bwd IAT Std', 'Fwd PSH Flags', 'Bwd PSH Flags', 'Fwd URG Flags',
+    'Bwd URG Flags', 'Fwd Header Length', 'Bwd Header Length',
+    'Bwd Packets/s', 'Min Packet Length', 'FIN Flag Count',
+    'RST Flag Count', 'PSH Flag Count', 'ACK Flag Count',
+    'URG Flag Count', 'Down/Up Ratio', 'Fwd Avg Bytes/Bulk',
+    'Fwd Avg Packets/Bulk', 'Fwd Avg Bulk Rate', 'Bwd Avg Bytes/Bulk',
+    'Bwd Avg Packets/Bulk', 'Bwd Avg Bulk Rate', 'Init_Win_bytes_forward',
+    'Init_Win_bytes_backward', 'min_seg_size_forward', 'Active Mean',
+    'Active Std', 'Active Max', 'Idle Std'
 ]
 
 DEFAULT_ATTACK_CLASSIFICATION_CLASSES = [

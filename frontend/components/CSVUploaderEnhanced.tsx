@@ -130,11 +130,13 @@ export default function CSVUploaderEnhanced() {
   };
 
   const attacksCount = result?.predictions.filter((p: any) =>
-    p.threat_prediction?.is_attack || p.attack_prediction
+    p.threat_prediction?.is_attack ||
+    (p.attack_prediction && p.attack_prediction.attack_type_name !== 'BENIGN')
   ).length || 0;
 
   const normalCount = result?.predictions.filter((p: any) =>
-    p.threat_prediction && !p.threat_prediction.is_attack && !p.attack_prediction
+    (p.threat_prediction && !p.threat_prediction.is_attack) ||
+    (p.attack_prediction && p.attack_prediction.attack_type_name === 'BENIGN')
   ).length || 0;
 
   const attackRate = result ? (attacksCount / result.total_rows) * 100 : 0;
