@@ -14,9 +14,9 @@ class DataPreprocessor:
     # Features required by ensemble model (10 features)
     # Updated to match actual trained model features
     THREAT_DETECTION_FEATURES = [
-        'flag', 'src_bytes', 'dst_bytes', 'count', 'diff_srv_rate',
-        'dst_host_srv_count', 'dst_host_same_srv_rate', 'dst_host_diff_srv_rate',
-        'dst_host_same_src_port_rate', 'dst_host_srv_diff_host_rate'
+        'service', 'flag', 'src_bytes', 'dst_bytes', 'count',
+        'same_srv_rate', 'diff_srv_rate', 'dst_host_srv_count',
+        'dst_host_same_srv_rate', 'dst_host_same_src_port_rate'
     ]
 
     # Features required by decision tree model (42 features)
@@ -234,9 +234,8 @@ class DataPreprocessor:
         """Validate that threat detection features are in expected ranges."""
         # Rate features should be between 0 and 1
         rate_features = [
-            'diff_srv_rate',
-            'dst_host_same_srv_rate', 'dst_host_same_src_port_rate',
-            'dst_host_diff_srv_rate', 'dst_host_srv_diff_host_rate'
+            'same_srv_rate', 'diff_srv_rate',
+            'dst_host_same_srv_rate', 'dst_host_same_src_port_rate'
         ]
 
         for feature in rate_features:
@@ -247,9 +246,9 @@ class DataPreprocessor:
                 )
 
         # Byte and count features should be non-negative
-        non_negative_features = ['src_bytes', 'dst_bytes', 'count', 'dst_host_srv_count']
+        non_negative_features = ['src_bytes', 'dst_bytes', 'count', 'dst_host_srv_count', 'service', 'flag']
         for feature in non_negative_features:
-            if features[feature] < 0:
+            if feature in features and features[feature] < 0:
                 raise ValueError(
                     f"Feature '{feature}' must be non-negative, "
                     f"got {features[feature]}"
