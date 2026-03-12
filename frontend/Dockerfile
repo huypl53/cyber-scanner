@@ -7,6 +7,8 @@ WORKDIR /app
 
 COPY package.json package-lock.json* ./
 RUN npm ci
+# Ensure SWC binary for Alpine (musl) is available
+RUN npm install --no-save @next/swc-linux-arm64-musl 2>/dev/null; exit 0
 
 # Rebuild the source code only when needed
 FROM base AS builder
