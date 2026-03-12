@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.api.routes import upload, predictions, websocket, config, models, health
+from app.api.routes import upload, predictions, websocket, config, models, health, export
 from app.kafka.consumer_aiokafka import start_consumer_loop
 from app.kafka.external_consumer import start_external_consumer_loop
 import uvicorn
@@ -66,6 +66,7 @@ from app.api.routes import test_producer
 app.include_router(
     test_producer.router, prefix=settings.API_V1_PREFIX, tags=["testing"]
 )
+app.include_router(export.router, prefix=settings.API_V1_PREFIX, tags=["export"])
 
 
 def run_migrations():

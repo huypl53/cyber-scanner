@@ -175,6 +175,30 @@
         "type": "type",
         "confidence": "confidence"
       }
+    },
+    "export": {
+      "preset1m": "1m",
+      "preset5m": "5m",
+      "preset15m": "15m",
+      "preset30m": "30m",
+      "preset1h": "1h",
+      "preset2h": "2h",
+      "custom": "Custom",
+      "from": "From",
+      "to": "To",
+      "apply": "Apply",
+      "exportBtn": "Export",
+      "featuresOnly": "Features Only (CSV)",
+      "withPredictions": "With Predictions (CSV)",
+      "confirmTitle": "Export Data",
+      "confirmMessage": "Found {count} records from {start} to {end}.",
+      "confirmLargeWarning": "This is a large export and may take a moment.",
+      "cancel": "Cancel",
+      "export": "Export",
+      "selectRange": "Select a time range first",
+      "invalidRange": "End must be after start",
+      "rangeTooLarge": "Range cannot exceed 2 hours",
+      "noData": "No data found in this time range"
     }
   },
   "models": {
