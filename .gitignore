@@ -50,3 +50,7 @@ playwright-report/
 coverage/
 Session.vim
 research
+*.md
+!README.md
+!**/README.md
+
