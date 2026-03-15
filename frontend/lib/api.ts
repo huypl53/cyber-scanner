@@ -167,6 +167,25 @@ export const stopTestStream = async () => {
   return response.data;
 };
 
+// Get export record count for preview
+export const getExportCount = async (
+  start: string,
+  end: string,
+  format: string
+): Promise<{ count: number; warning?: string; time_range: { start: string; end: string } }> => {
+  const response = await api.get('/api/v1/export/realtime', {
+    params: { start, end, format, count_only: true },
+  });
+  return response.data;
+};
+
+// Build export download URL
+export const getExportUrl = (start: string, end: string, format: string): string => {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  const params = new URLSearchParams({ start, end, format, count_only: 'false' });
+  return `${baseUrl}/api/v1/export/realtime?${params.toString()}`;
+};
+
 // ========== Data Source Configuration API ==========
 
 // Get all data sources

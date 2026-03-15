@@ -7,6 +7,7 @@ import { startTestStream, stopTestStream } from '@/lib/api';
 import { StatCard } from '@/components/StatCard';
 import { TerminalLog } from '@/components/TerminalLog';
 import { ThroughputGraph } from '@/components/ThroughputGraph';
+import { TimeRangeToolbar } from '@/components/TimeRangeToolbar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -252,6 +253,9 @@ export default function RealtimePage() {
 
       {/* Throughput Graph */}
       <ThroughputGraph data={throughputData} />
+
+      {/* Time Range & Export Toolbar */}
+      <TimeRangeToolbar />
 
       {/* Terminal Log */}
       <TerminalLog entries={logEntries} maxHeight="500px" />

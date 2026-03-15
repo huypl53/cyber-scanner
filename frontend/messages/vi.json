@@ -175,6 +175,30 @@
         "type": "loại",
         "confidence": "độ tin cậy"
       }
+    },
+    "export": {
+      "preset1m": "1p",
+      "preset5m": "5p",
+      "preset15m": "15p",
+      "preset30m": "30p",
+      "preset1h": "1g",
+      "preset2h": "2g",
+      "custom": "Tùy chỉnh",
+      "from": "Từ",
+      "to": "Đến",
+      "apply": "Áp dụng",
+      "exportBtn": "Xuất",
+      "featuresOnly": "Chỉ Đặc trưng (CSV)",
+      "withPredictions": "Kèm Dự đoán (CSV)",
+      "confirmTitle": "Xuất Dữ liệu",
+      "confirmMessage": "Tìm thấy {count} bản ghi từ {start} đến {end}.",
+      "confirmLargeWarning": "Đây là bản xuất lớn, có thể mất một lúc.",
+      "cancel": "Hủy",
+      "export": "Xuất",
+      "selectRange": "Chọn khoảng thời gian trước",
+      "invalidRange": "Thời gian kết thúc phải sau thời gian bắt đầu",
+      "rangeTooLarge": "Khoảng thời gian không được vượt quá 2 giờ",
+      "noData": "Không tìm thấy dữ liệu trong khoảng thời gian này"
     }
   },
   "models": {
